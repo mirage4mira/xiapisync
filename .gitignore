@@ -27,4 +27,13 @@ yarn-error.log
 composer.phar
 
 # Allow
-!*/vendor/spatie/laravel-webhook-client/config/webhook-client.php
+!vendor
+vendor/*
+!vendor/spatie
+vendor/spatie/*
+!vendor/spatie/laravel-webhook-client
+vendor/spatie/laravel-webhook-client/*
+!vendor/spatie/laravel-webhook-client/config
+vendor/spatie/laravel-webhook-client/config/*
+!vendor/spatie/laravel-webhook-client/config/webhook-client.php
+
