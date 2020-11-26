@@ -35,7 +35,7 @@ class ShopeeProductModel extends Model
         $datas = [];
         foreach($this->itemsList as $itemList){
             $data = [
-                'item_id' => $itemList['item_id'],
+                'item_id' => intval($itemList['item_id']),
                 'partner_id' => shopee_partner_id(),
                 'shopid' => shopee_shop_id(),
                 'timestamp' => $this->timestamp,

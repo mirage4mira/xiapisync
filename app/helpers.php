@@ -34,8 +34,9 @@ function shopee_multiple_async_post(string $path, array $datas){
     foreach($datas as $key => $d){
         $signBaseString = $url.'|'.json_encode($d);
         $sign = hash_hmac('sha256',$signBaseString,$partnerKey);
+        
         $headers = ['Authorization'=> $sign,'Content-Type' => 'application/json'];
-        $promises[] = $client->postAsync($url,['headers' => $headers,'json' => $d,'timeout' => 5,'connect_timeout' => 5]);
+        $promises[] = $client->postAsync($url,['headers' => $headers,'json' => $d,'timeout' => 10,'connect_timeout' => 10]);
     } 
 
         // $results = GuzzleHttp\Promise\unwrap($promises);
@@ -43,7 +44,17 @@ function shopee_multiple_async_post(string $path, array $datas){
 
     $contents = [];
     foreach($results as $result){
-        $contents[] = json_decode($result['value']->getBody()->getContents(),true);
+        \Log::error('post timeout');
+        if(isset($result['value'])){
+            $content = json_decode($result['value']->getBody()->getContents(),true);
+            if(isset($content['error'])){
+                \Log::error($content['error']);
+                \Log::error($content['msg']);
+            }else{
+                $contents[] = $content;
+            }
+        }
+        
     }
 
     return $contents;

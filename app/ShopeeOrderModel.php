@@ -98,7 +98,6 @@ class ShopeeOrderModel extends Model
 
     public function getOrdersEscrowDetail(){
 
-        $orderDetails = [];
         $orderLists = self::getOrdersList();
         $path = '/api/v1/orders/my_income';
         $datas = [];
@@ -113,9 +112,16 @@ class ShopeeOrderModel extends Model
             $datas [] = $data;
         }
         
-        $orderDetails = shopee_multiple_async_post($path,$datas);
-
-        return $orderDetails;
+        $ordersDetails = shopee_multiple_async_post($path,$datas);
+        foreach($ordersDetails as $key => $orderDetail){
+            foreach($orderLists as $order){
+                if($orderDetail['order']['ordersn'] == $order['ordersn']){
+                    $ordersDetails[$key]['order']['update_time'] = $order['update_time']; 
+                    $ordersDetails[$key]['order']['order_status'] = $order['order_status']; 
+                }
+            }
+        }
+        return $ordersDetails;
     
     }
 
