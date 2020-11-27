@@ -42,7 +42,7 @@ class ShopeeProductModel extends Model
             ];
             $datas [] = $data;
         }
-    $contents = shopee_multiple_async_post($path,$datas);
+        $contents = shopee_multiple_async_post($path,$datas);
         return $contents;
     }
 

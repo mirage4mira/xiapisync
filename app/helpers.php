@@ -100,7 +100,11 @@ if(!function_exists('shopee_partner_key')){
 
 if(!function_exists('shopee_shop_id')){
     function shopee_shop_id(){
-        return intval(env('SHOPEE_SHOP_ID'));
+        if(getShopSession() && getShopSession()['platform'] === 'SHOPEE'){
+            return intval(getShopSession()['platform_shop_id']);
+        }else{
+            throw new Error('Current shop is not Shopee');
+        }
     }
 }
 

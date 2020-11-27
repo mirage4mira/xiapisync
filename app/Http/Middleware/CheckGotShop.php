@@ -18,7 +18,7 @@ class CheckGotShop
     {   
         if(!getShopSession()){
             if(Auth::user()->shops()->count()){
-                setShopSession(Auth::user()->shops()->first()->getShopInfo());
+            setShopSession(Auth::user()->shops()->first()->getShopInfo());
             }else{
                 return redirect('/sign-in-platform');
             }

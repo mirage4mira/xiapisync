@@ -1,58 +1,68 @@
 @extends('dashboard.base')
 
 @section('content')
-
+<style>
+td, th {vertical-align:middle !important;font-size:0.7rem;}
+td[contenteditable]:hover{border:1px solid black}
+.pull-left{float:left!important;}
+.pull-right{float:right!important;}
+</style>
           <div class="container-fluid">
             <div class="fade-in">
               <!-- /.row-->
               <div class="row">
                 <div class="col-md-12">
                   <div class="card">
-                    <div class="card-header">Traffic & Sales</div>
+                    <div class="card-header">Stocks</div>
                     <div class="card-body">
-                        <div style="overflow-x:scroll;">
-                            <table class="inventory-table">
-                                <thead class="thead-light">
+                        <div style="overflow-x:auto;">
+                            <table class="table table-bordered inventory-table table-editable">
+                                <thead>
                                   <tr>
-                                    <th class="text-center">Image</th>
-                                    <th class="text-center">Item</th>
+                                    <th style="min-width:200px">Item</th>
+                                    <th class="text-center">SKU</th>
                                     <th class="text-center">Total</th>
                                     <th class="text-center">Inbound</th>
                                     <th class="text-center">Available</th>
                                     <th class="text-center">Reserved</th>
                                     <th class="text-center">Days to supply</th>
                                     <th class="text-center">Price</th>
-                                    <th class="text-center">COGS</th>
+                                    <th class="text-center">Prep Cost</th>
+                                    <th class="text-center">cost</th>
                                     <th class="text-center">Asset Value</th>
-                                    <th class="text-center">$ of asset Value</th>
-                                    <th class="text-center">Gross Sales</th>
-                                    <th class="text-center">Average Monthly Sales</th>
-                                    <th class="text-center">Sales Quantity</th>
-                                    <th class="text-center">Average Monthly Quantity</th>
-                                    <th class="text-center">Profit</th>
-                                    <th class="text-center">ROI</th>
+                                    <th class="text-center">% of asset Value</th>
                                   </tr>
                                 </thead>
                                 <tbody>
                                   <tr>
-                                    <td class="text-center">img</td>
-                                    <td class="text-center">Nike shoes</td>
-                                    <td class="text-center">10</td>
-                                    <td class="text-center"><input type="text" style="border: 0;text-align:center"></td>
-                                    <td class="text-center">8</td>
-                                    <td class="text-center">1</td>
-                                    <td class="text-center">30</td>
-                                    <td class="text-center">100</td>
-                                    <td class="text-center">80</td>
-                                    <td class="text-center">800</td>
+                                    <td class="d-flex"><img src="/gifs/loading.gif"><div>Nike shoes Nike shoes Nike shoes Nike shoes Nike shoes Nike shoes Nike shoes</div></td>
+                                    <td class="text-center">123334</td>
+                                    <td class="text-center" contenteditable='true'></td>
+                                    <td class="text-center" contenteditable='true'></td>
+                                    <td class="text-center" contenteditable='true'></td>
+                                    <td class="text-center" contenteditable='true'></td>
+                                    <td class="text-center" contenteditable='true'></td>
+                                    <td class="text-center" contenteditable='true'></td>
+                                    <td class="text-center" contenteditable='true'></td>
+                                    <td class="text-center" contenteditable='true'></td>
+
                                     <td class="text-center">5%</td>
                                     <td class="text-center">5%</td>
+                                  </tr>
+                                  <tr>
+                                    <td>Nike shoes Nike shoes Nike shoes Nike shoes Nike shoes Nike shoes Nike shoes</td>
+                                    <td class="text-center">123334</td>
+                                    <td class="text-center" contenteditable='true'></td>
+                                    <td class="text-center" contenteditable='true'></td>
+                                    <td class="text-center" contenteditable='true'></td>
+                                    <td class="text-center" contenteditable='true'></td>
+                                    <td class="text-center" contenteditable='true'></td>
+                                    <td class="text-center" contenteditable='true'></td>
+                                    <td class="text-center" contenteditable='true'></td>
+                                    <td class="text-center" contenteditable='true'></td>
+
                                     <td class="text-center">5%</td>
                                     <td class="text-center">5%</td>
-                                    <td class="text-center">5%</td>
-                                    <td class="text-center">5%</td>
-                                    <td class="text-center">5%</td>
-        
                                   </tr>
                                 </tbody>
                               </table>
@@ -72,5 +82,16 @@
 
     <script src="{{ asset('js/Chart.min.js') }}"></script>
     <script src="{{ asset('js/coreui-chartjs.bundle.js') }}"></script>
-    <script src="{{ asset('js/main.js') }}" defer></script>
+    <script src="{{ asset('js/main.js') }}"></script>
+
+    <script>
+
+
+
+      $(document).ready( function () {
+        $('.inventory-table').DataTable({
+        "dom": '<"pull-left"f><"pull-right"l>tip'
+    });
+      } );
+    </script>
 @endsection

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;
 use App\Shop;
+use App\ShopSetting;
 use Auth;
 
 class ShopController extends Controller
@@ -32,6 +33,8 @@ class ShopController extends Controller
         // ShopUser::create(['shop_id' => $shop->id,'user_id'=>\Auth::Id()]);
         Auth::user()->shops()->attach($shop);
         setShopSession($shop->getShopInfo());
+
+        if(!$shop->settings()->count()) return redirect('/shop-settings-setup');
         return redirect('/');
     }
 }

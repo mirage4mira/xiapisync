@@ -58,6 +58,8 @@
       gtag('config', 'UA-118965717-3');
       // Bootstrap ID
       gtag('config', 'UA-118965717-5');
+
+      var CSRF_TOKEN = '{{csrf_token()}}';
     </script>
 
     <link href="{{ asset('css/coreui-chartjs.css') }}" rel="stylesheet">
@@ -82,6 +84,7 @@
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/datejs/1.0/date.min.js"></script>
     
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
   </head>
 
 
