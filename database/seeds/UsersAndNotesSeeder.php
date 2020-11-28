@@ -17,8 +17,8 @@ class UsersAndNotesSeeder extends Seeder
      */
     public function run()
     {
-        $numberOfUsers = 10;
-        $numberOfNotes = 100;
+        $numberOfUsers = 2;
+        $numberOfNotes = 1;
         $usersIds = array();
         $statusIds = array();
         $faker = Faker::create();

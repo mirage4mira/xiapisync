@@ -33,7 +33,7 @@ Route::group(['middleware' => ['get.menu']], function () {
             Route::get('/shop-settings-setup', function () {  return view('shop-settings-setup'); });
             Route::post('/shop-settings-setup', 'ShopSettingController@create' );
             Route::get('/', function () {           return view('dashboard.homepage'); });
-            Route::get('/inventory', function () {           return view('inventory'); });
+            Route::get('/inventory', function () {         return view('inventory'); });
             // Route::get('/colors', function () {     return view('dashboard.colors'); });
             // Route::get('/typography', function () { return view('dashboard.typography'); });
             // Route::get('/charts', function () {     return view('dashboard.charts'); });

@@ -23,6 +23,8 @@ class ShopSettingController extends Controller
             }
         }
 
+        setShopSettingSession();
+
         return response()->json();
     }
 }

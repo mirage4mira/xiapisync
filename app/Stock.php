@@ -21,7 +21,8 @@ class Stock extends Model
     }
 
     public static function getDefaultStockSettings(){
-        return ShopSetting::where('shop_id',getShopSession()['id'])->whereIn('setting',self::$shopStockSettings)->get();
+        // \Log::alert(getShopSettingSession()->whereIn('setting',self::$shopStockSettings));
+        return getShopSettingSession()->whereIn('setting',self::$shopStockSettings);
     }
 
     public function getCostAttribute(){

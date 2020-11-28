@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Contracts\Queue\ShouldQueue;
+
 if (! function_exists('get_platforms')) {
     function get_platforms() {
         return [
@@ -36,7 +38,7 @@ function shopee_multiple_async_post(string $path, array $datas){
         $sign = hash_hmac('sha256',$signBaseString,$partnerKey);
         
         $headers = ['Authorization'=> $sign,'Content-Type' => 'application/json'];
-        $promises[] = $client->postAsync($url,['headers' => $headers,'json' => $d,'timeout' => 10,'connect_timeout' => 10]);
+        $promises[] = $client->postAsync($url,['headers' => $headers,'json' => $d,'timeout' => 30,'connect_timeout' => 30]);
     } 
 
         // $results = GuzzleHttp\Promise\unwrap($promises);
@@ -123,4 +125,13 @@ if(!function_exists('getShopSession')){
     function getShopSession(){
         return Session::get('current_shop_info');
     }
+}
+
+function setShopSettingSession(){
+    $shopSettings = collect(App\ShopSetting::where('shop_id',getShopSession()['id'])->get()->toArray());
+    Session::put('current_shop_settings',$shopSettings);
+}
+
+function getShopSettingSession(){
+    return Session::get('current_shop_settings');
 }
