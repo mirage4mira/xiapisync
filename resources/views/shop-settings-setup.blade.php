@@ -98,9 +98,8 @@
       data.default_cogs_percentage = $('input[name="default_cogs_percentage"]').val(); 
       data.default_prep_cost = $('input[name="default_prep_cost"]').val();
       data.default_days_to_supply = $('input[name="default_days_to_supply"]').val();
-      data.default_safely_stock = $('input[name="default_safety_stock"]').val();
+      data.default_safety_stock = $('input[name="default_safety_stock"]').val();
     }
-    console.log(data);
     
     return $.ajax({
       async: true,

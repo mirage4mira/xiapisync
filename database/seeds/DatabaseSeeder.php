@@ -1,8 +1,6 @@
 <?php
 
 use Illuminate\Database\Seeder;
-//use database\seeds\UsersAndNotesSeeder;
-//use database\seeds\MenusTableSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -26,13 +24,7 @@ class DatabaseSeeder extends Seeder
             DB::table($name)->truncate();
         }
         DB::statement("SET foreign_key_checks=1");
-        //$this->call(MenusTableSeeder::class);
-        //$this->call(UsersAndNotesSeeder::class);
-        $this->call('UsersAndNotesSeeder');
-        $this->call('MenusTableSeeder');
-        $this->call('FolderTableSeeder');
-        $this->call('ExampleSeeder');
-        $this->call('BREADSeeder');
-        $this->call('EmailSeeder');
+
+        $this->call('UsersSeeder');
     }
 }

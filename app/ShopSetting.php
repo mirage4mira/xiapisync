@@ -12,7 +12,7 @@ class ShopSetting extends Model
         'default_cogs_percentage' => 'required|numeric|min:0|max:100',
         'default_prep_cost' => 'required|numeric|min:0',
         'default_days_to_supply' => 'required|integer|min:0',
-        'default_safely_stock' => 'required|integer|min:0',
+        'default_safety_stock' => 'required|integer|min:0',
     ];
 
     public static function getSettingsKey(){

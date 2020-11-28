@@ -19,7 +19,6 @@ class ShopeeOrderController extends Controller
         
         handleValidatorFails( $request,$validator);
         
-
         $orderDetails = (new ShopeeOrderModel($request->status,new Carbon($request->start_date),new Carbon($request->end_date)))->getOrdersEscrowDetail();
         return response()->json($orderDetails);
     }

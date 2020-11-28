@@ -10,13 +10,14 @@ class ShopeeProductController extends Controller
 {
     public function getProductsDetail(){
         $contents =  (new ShopeeProductModel)->getItemsDetail();
-        $defaultStockSettings =  Stock::getDefaultStockSettings();
-        $default_cogs_percentage = $defaultStockSettings->where('setting','default_cogs_percentage')->first()['value'];
-        $default_prep_cost = $defaultStockSettings->where('setting','default_prep_cost')->first()['value'];
-        $default_days_to_supply = $defaultStockSettings->where('setting','default_days_to_supply')->first()['value'];
-        $default_safety_stock = $defaultStockSettings->where('setting','default_safety_stock')->first()['value'];
+        $settings =  getShopSettingSession();
+        $default_cogs_percentage = $settings['default_cogs_percentage'];
+        $default_prep_cost = $settings['default_prep_cost'];
+        $default_days_to_supply = $settings['default_days_to_supply'];
+        $default_safety_stock = $settings['default_safety_stock'];
 
         $stocks = Stock::where('shop_id',getShopSession()['id'])->get();  
+
         foreach($contents as $key1 => $content){
             if(!empty($content['item']['variations'])){
                 foreach($content['item']['variations'] as $key2 => $variation){

@@ -45,10 +45,6 @@ class User extends Authenticatable
         'deleted_at'
     ];
 
-    protected $attributes = [ 
-        'menuroles' => 'user',
-    ];
-
     public function shops()
     {
         return $this->belongsToMany('App\Shop');

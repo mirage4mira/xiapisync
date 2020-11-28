@@ -16,7 +16,7 @@ class ShopeeProductModel extends Model
 
     public function getItemsList(){
         $path = '/api/v1/items/get';
-
+        
         $data = [
             'pagination_offset' => 0,
             'pagination_entries_per_page' => 100,
@@ -25,7 +25,8 @@ class ShopeeProductModel extends Model
             'timestamp' => $this->timestamp,
         ];
         $responseData = shopee_http_post($path,$data)->json();
-        $this->itemsList = $responseData['items']; 
+        
+        $this->itemsList = $responseData['items'];
         return $responseData;
     }
 
@@ -33,6 +34,7 @@ class ShopeeProductModel extends Model
         $path = '/api/v1/item/get';
         $this->getItemsList();
         $datas = [];
+        
         foreach($this->itemsList as $itemList){
             $data = [
                 'item_id' => intval($itemList['item_id']),

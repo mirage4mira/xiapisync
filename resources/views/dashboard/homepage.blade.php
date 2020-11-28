@@ -9,14 +9,13 @@
       <div class="card">
         <div class="card-body">
           <div class="row">
-            <div class="col-sm-1">
+            <div class="col-lg-1">
               <h4 class="card-title mb-0">Sales</h4>
             </div>
             <div class="col-4">
               <input type="text" name="product" list="products-selection" id="product" class="form-control" placeholder="Search By Products" onchange="salesGraph.reloadGraphData(this);" />
               <datalist id="products-selection">
                 <option></option>
-                <option value="224">123</option>
               </datalist>
             </div>
             <div class="col-3 d-flex flex-row">
@@ -25,8 +24,8 @@
             </div>
             <div class="col-sm-4 d-none d-md-block">
               </button>
-              <div class="btn-group btn-group-toggle float-right mr-3 date-selection-btn-group" data-toggle="buttons">
-                <label class="btn btn-outline-secondary">
+              <div class="btn-group btn-group-toggle float-right mr-2 date-selection-btn-group" data-toggle="buttons">
+                <label class="btn btn-outline-secondary  active">
                   <input id="option1" type="radio" name="options" autocomplete="off" onchange="salesGraph.reloadGraphData(this);"> 30 Days
                 </label>
                 <label class="btn btn-outline-secondary">
@@ -158,7 +157,7 @@
 <script src="{{ asset('js/coreui-chartjs.bundle.js') }}"></script>
 <script src="{{ asset('js/main.js') }}"></script>
 <script>
-  var start_date = Date.today().addMonths(-3).toString(AJAX_DATE_FORMAT);
+  var start_date = Date.today().addDays(-89).toString(AJAX_DATE_FORMAT);
   var end_date = Date.today().toString(AJAX_DATE_FORMAT);
   var ordersEsrowData;
   var productsData;
@@ -244,6 +243,7 @@
       else if (objId === "product") {
         var _item = $('#products-selection option[value="' + obj.val() + '"]');
         var itemId = _item.data('item-id');
+        
         if (!itemId) {
           this.item = null;
           this.addLoadingToGraph();
@@ -255,6 +255,7 @@
           itemId,
           variationId
         };
+
         this.addLoadingToGraph();
         this.loadGraphData();
         return;
@@ -282,6 +283,7 @@
       var labels = [];
       var sales = 0;
       var profit = 0;
+
       var temp_date = Date.parse(this.start_date);
       while (temp_date.compareTo(Date.parse(this.end_date).addDays(1)) === -1) {
         dates.push({
@@ -388,8 +390,8 @@
         }
       });
 
-      $('#sales').html('$' + sales.toFixed(2));
-      $('#profit').html('$' + profit.toFixed(2));
+      $('#sales').html('$' + money(sales));
+      $('#profit').html('$' + money(profit));
 
       if (this.item) {
         $('#orders_text').html('Quantity Sold');
@@ -403,7 +405,7 @@
     }
   }
 
-  var salesGraph = new SalesGraph(status, start_date, end_date);
+  var salesGraph = new SalesGraph(status, Date.parse(start_date).addDays(60).toString(AJAX_DATE_FORMAT), end_date);
 
   
   class InventoryAlert {
@@ -412,7 +414,6 @@
     timeToDisplayInventoryAlert(){
       this.display_inventory_alert += 1;
       if (this.display_inventory_alert == 2) {
-        console.log(1222);
         this.loadInventoryAlert();
       }
     }
@@ -436,7 +437,7 @@
       });
       
       var itemsStockData = [];
-
+      
       productsData.forEach(function(productData){
         if(productData['item'].variations.length){
           productData['item'].variations.forEach(function(variation){
@@ -461,13 +462,11 @@
           itemStockData.current_stock = productData['item']['stock'];
           itemsStockData.push(itemStockData);
         }
-        
       });
       
       var low_on_stock = 0;
       var no_stock = 0;
       
-
       itemsStockData.forEach(function(itemStockData){
 
         itemsThreeMonthsSoldQty.forEach(function(itemThreeMonthsSoldQty){

@@ -20,11 +20,6 @@ class Stock extends Model
         return $this->hasMany('App\StockPrepCost');
     }
 
-    public static function getDefaultStockSettings(){
-        // \Log::alert(getShopSettingSession()->whereIn('setting',self::$shopStockSettings));
-        return getShopSettingSession()->whereIn('setting',self::$shopStockSettings);
-    }
-
     public function getCostAttribute(){
         $cost = $this->costs()->orderBy('from_date','DESC')->first(); 
         return $cost->cost; 

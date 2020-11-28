@@ -4,13 +4,13 @@
 </div>
 <ul class="c-sidebar-nav">
     <li class="c-sidebar-nav-item">
-        <a class="c-sidebar-nav-link" href="http://localhost:8000/">
+        <a class="c-sidebar-nav-link" href="/">
             <i class="cil-speedometer c-sidebar-nav-icon"></i>
             Dashboard
         </a>
     </li>
     <li class="c-sidebar-nav-item">
-        <a class="c-sidebar-nav-link" href="http://localhost:8000/inventory">
+        <a class="c-sidebar-nav-link" href="/inventory">
             <i class="cil-3d c-sidebar-nav-icon"></i>
             Inventory
         </a>
@@ -19,12 +19,12 @@
 
     <li class="c-sidebar-nav-dropdown"><a class="c-sidebar-nav-dropdown-toggle"><i class="cil-clipboard c-sidebar-nav-icon"></i>Reports</a>
         <ul class="c-sidebar-nav-dropdown-items">
-            <li class="c-sidebar-nav-item"><a class="c-sidebar-nav-link" href="http://localhost:8000/#"><span class="c-sidebar-nav-icon"></span>Profit and Loss</a></li>
+            <li class="c-sidebar-nav-item"><a class="c-sidebar-nav-link" href="#"><span class="c-sidebar-nav-icon"></span>Profit and Loss</a></li>
         </ul>
     </li>
     <li class="c-sidebar-nav-dropdown"><a class="c-sidebar-nav-dropdown-toggle"><i class="cil-settings c-sidebar-nav-icon"></i>Settings</a>
         <ul class="c-sidebar-nav-dropdown-items">
-            <li class="c-sidebar-nav-item"><a class="c-sidebar-nav-link" href="http://localhost:8000/#"><span class="c-sidebar-nav-icon"></span>Add more shops</a></li>
+            <li class="c-sidebar-nav-item"><a class="c-sidebar-nav-link" href="#"><span class="c-sidebar-nav-icon"></span>Add more shops</a></li>
         </ul>
     </li>
 </ul>

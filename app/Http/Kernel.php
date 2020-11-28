@@ -53,6 +53,7 @@ class Kernel extends HttpKernel
     protected $routeMiddleware = [
         'auth' => \App\Http\Middleware\Authenticate::class,
         'check.got.shop' => \App\Http\Middleware\CheckGotShop::class,
+        'check.settings.key' => \App\Http\Middleware\CheckSettingsKey::class,
         'auth.basic' => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
         'bindings' => \Illuminate\Routing\Middleware\SubstituteBindings::class,
         'cache.headers' => \Illuminate\Http\Middleware\SetCacheHeaders::class,
@@ -62,8 +63,8 @@ class Kernel extends HttpKernel
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'admin' => \App\Http\Middleware\Admin::class,
-        'get.menu' => \App\Http\Middleware\GetMenu::class,
-        'role' => \Spatie\Permission\Middlewares\RoleMiddleware::class,
+        // 'get.menu' => \App\Http\Middleware\GetMenu::class,
+        // 'role' => \Spatie\Permission\Middlewares\RoleMiddleware::class,
     ];
 
     /**
