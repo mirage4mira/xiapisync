@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\ShopeeProductModel;
 use App\Stock;
+use Auth;
 
 class ShopeeProductController extends Controller
 {
@@ -16,7 +17,7 @@ class ShopeeProductController extends Controller
         $default_days_to_supply = $settings['default_days_to_supply'];
         $default_safety_stock = $settings['default_safety_stock'];
 
-        $stocks = Stock::where('shop_id',getShopSession()['id'])->get();  
+        $stocks = Stock::where('shop_id',Auth::user()->current_shop_id)->get();  
 
         foreach($contents as $key1 => $content){
             if(!empty($content['item']['variations'])){

@@ -17,6 +17,11 @@ class Shop extends Model
         return $this->hasmany('App\ShopSetting');
     }
 
+    public function users()
+    {
+        return $this->belongsToMany('App\User');
+    }
+
     public function getShopInfo(){
         $shopInfo = [];
         if($this->platform === self::$platforms[1]){

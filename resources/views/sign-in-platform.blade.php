@@ -1,7 +1,14 @@
 @extends('dashboard.authBase')
 
 @section('content')
-
+    <style>
+      .logout-btn:hover{
+        color:blue;
+      }
+    </style>
+    <div style="position:absolute;top:0;right:0;">
+      <form action="/logout" method="POST"> @csrf <button type="submit" class="btn btn-block logout-btn"><i class="fa fa-sign-out" aria-hidden="true"></i>&nbsp;Logout</button></form>
+    </div>
     <div class="container">
       <div class="row justify-content-center">
         <div class="col-md-8">

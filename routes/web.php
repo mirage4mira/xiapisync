@@ -22,11 +22,17 @@ Auth::routes();
     Route::group(['middleware' => ['auth']], function () {
         Route::get('/sign-in-platform','ShopController@signIn');
         Route::get('/add-shop','ShopController@addShop');
+
+        Route::get('/test',function(){
+            Auth::logout();
+            session()->flush();
+            return redirect('/login');
+        });
+        Route::get('test-error',function(){
+            throw new Exception('Test');
+        });
         
-        Route::group(['middleware' => ['check.got.shop']],function(){
-            Route::get('/123',function(){
-                (new ShopeeProductModel())->getItemsDetail();
-            });
+        Route::group(['middleware' => ['check.got.shop']],function(){   
 
             Route::post('/get-orders-esrow-detail', 'ShopeeOrderController@getOrdersEsrowDetail');
             Route::post('/get-products-detail', 'ShopeeProductController@getProductsDetail');

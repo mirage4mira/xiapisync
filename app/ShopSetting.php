@@ -20,10 +20,10 @@ class ShopSetting extends Model
     }
 
     public static function getSettingValue(string $setting){
-        return self::where('setting',$setting)->where('shop_id',getShopSession()['id'])->first()->value;
+        return self::where('setting',$setting)->where('shop_id',Auth::user()->current_shop_id)->first()->value;
     }
 
     public static function getSettingsValue(array $settings){
-        return self::whereIn('setting',$settings)->where('shop_id',getShopSession()['id'])->get();
+        return self::whereIn('setting',$settings)->where('shop_id',Auth::user()->current_shop_id)->get();
     }
 }

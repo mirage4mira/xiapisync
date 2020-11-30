@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 use App\ShopSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
-
+use Auth;
 class ShopSettingController extends Controller
 {
 
@@ -18,7 +18,7 @@ class ShopSettingController extends Controller
 
         foreach($settings as $setting => $value){
             if(in_array($setting,$allSettingsKey)){
-                $shopSetting = ShopSetting::firstOrNew(['shop_id' =>getShopSession()['id'] ,'setting' => $setting,'value' => $value]);
+                $shopSetting = ShopSetting::firstOrNew(['shop_id' =>Auth::user()->current_shop_id ,'setting' => $setting,'value' => $value]);
                 $shopSetting->save();
             }
         }

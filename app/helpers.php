@@ -101,8 +101,9 @@ if(!function_exists('shopee_partner_key')){
 
 if(!function_exists('shopee_shop_id')){
     function shopee_shop_id(){
-        if(getShopSession() && getShopSession()['platform'] === 'SHOPEE'){
-            return intval(getShopSession()['platform_shop_id']);
+        $currentShopId = Auth::user()->current_shop_id;
+        if($currentShopId && getShopsSession()[$currentShopId]['platform'] === 'SHOPEE'){
+            return intval(getShopsSession()[$currentShopId]['platform_shop_id']);
         }else{
             throw new Error('Current shop is not Shopee');
         }
@@ -114,29 +115,35 @@ if(!function_exists('generate_token')){
         return md5(rand(1, 10) . microtime());
     }
 }
-if(!function_exists('setShopSession')){
-    function setShopSession(array $shopInfo){
-        Session::put('current_shop_info',$shopInfo);
+
+function setShopsSession(){
+    $user = Auth::user();
+    $shops = $user->shops;
+    $shopsSession = [];
+    foreach($shops as $shop){
+        $shopsSession [$shop->id] = $shop->getShopInfo();
     }
+    
+    Session::put('available_shops_info',$shopsSession);
 }
 
-if(!function_exists('getShopSession')){
-    function getShopSession(){
-        return Session::get('current_shop_info');
+if(!function_exists('getShopsSession')){
+    function getShopsSession(){
+        return Session::get('available_shops_info');
     }
 }
 
 function setShopSettingSession(){
-    $shopSettings = App\ShopSetting::where('shop_id',getShopSession()['id'])->get()->toArray();
+
+    $shopSettings = App\ShopSetting::where('shop_id',Auth::user()->current_shop_id)->get()->toArray();
     $settings = [];
     foreach($shopSettings as $shopSetting){
         $settings[$shopSetting['setting']] = $shopSetting['value']; 
     }
-    // dd($settings);
+
     Session::put('current_shop_settings',$settings);
 }
 
 function getShopSettingSession(){
-    // dd(Session::get('current_shop_settings'));
     return Session::get('current_shop_settings');
 }

@@ -82,7 +82,6 @@
   
 
   <script>
-
     @if($errors)
       @foreach($errors as $error)
       $.notify("{{$error}}");

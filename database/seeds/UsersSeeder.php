@@ -17,9 +17,6 @@ class UsersSeeder extends Seeder
      */
     public function run()
     {
-        $numberOfUsers = 2;
-        $usersIds = array();
-
         $faker = Faker::create();
        
 
@@ -27,22 +24,10 @@ class UsersSeeder extends Seeder
         $user = User::create([ 
             'name' => 'admin',
             'email' => 'admin@admin.com',
+            'username' => 'admin',
             'email_verified_at' => now(),
             'password' => bcrypt(123), // password
             'remember_token' => Str::random(10),
         ]);
-
-
-        for($i = 0; $i<$numberOfUsers; $i++){
-            $user = User::create([ 
-                'name' => $faker->name(),
-                'email' => $faker->unique()->safeEmail(),
-                'email_verified_at' => now(),
-                'password' => bcrypt(123), // password
-                'remember_token' => Str::random(10),
-            ]);
-
-            array_push($usersIds, $user->id);
-        }
     }
 }
