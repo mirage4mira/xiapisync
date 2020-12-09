@@ -15,6 +15,12 @@
             Inventory
         </a>
     </li>
+    <li class="c-sidebar-nav-item">
+        <a class="c-sidebar-nav-link" href="/inventory/inbound">
+            <i class="cil-3d c-sidebar-nav-icon"></i>
+            Add Inbound Order
+        </a>
+    </li>
 
 
     <li class="c-sidebar-nav-dropdown"><a class="c-sidebar-nav-dropdown-toggle"><i class="cil-clipboard c-sidebar-nav-icon"></i>Reports</a>

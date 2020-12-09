@@ -16,14 +16,14 @@ class CreateStockTable extends Migration
         Schema::create('stocks', function (Blueprint $table) {
             $table->id();
             $table->unsignedInteger('shop_id')->nullable(false);
-            $table->unsignedInteger('platform_item_id')->nullable(false);
-            $table->unsignedInteger('platform_variation_id')->nullable(false)->default(0);
-            $table->unsignedInteger('inbound')->nullable(false)->default(0);
-            $table->unsignedInteger('safely_stock')->nullable(false)->default(0);
+            $table->unsignedBigInteger('platform_item_id')->nullable(false);
+            $table->unsignedBigInteger('platform_variation_id')->nullable(false)->default(0);
+            // $table->unsignedInteger('inbound')->nullable(false)->default(0);
+            $table->unsignedInteger('safety_stock')->nullable(false)->default(0);
             $table->unsignedInteger('days_to_supply')->nullable(false)->default(0);
             $table->timestamps();
 
-            $table->unique(['platform_item_id', 'platform_variation_id']);
+            $table->unique(['shop_id','platform_item_id', 'platform_variation_id']);
         });
     }
 

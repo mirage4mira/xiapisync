@@ -4,7 +4,7 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
-
+use Illuminate\Support\Facades\Cache;
 
 class ShopeeOrderModel extends Model
 {   
@@ -22,19 +22,21 @@ class ShopeeOrderModel extends Model
         4 => 'COMPLETED',
         5 => 'IN_CANCEL',
         6 => 'CANCELLED',
-        7 => 'TO_RETURN'
+        7 => 'TO_RETURN',
+        8 => 'PAID'
     ];
 
     public function __construct(string $status,Carbon $startdate,Carbon $enddate){
+
         $this->status = $status;
-        $this->startdate = $startdate;
-        $this->enddate = $enddate;
+        $this->startdate = $startdate->startOfDay();
+        $this->enddate = $enddate->endOfDay();
         $this->timestamp = time();
   
     }
 
     private function getDateRanges(){
-        $date = $this->startdate;
+        $date = $this->startdate->copy();
         $this->dayInterval = 14;
         $dayInterval = $this->dayInterval;
         $dateRanges = [];
@@ -43,7 +45,7 @@ class ShopeeOrderModel extends Model
         while($date->lt($this->enddate)){
             $dateRanges[$i]['start_date'] = $date->copy()->startOfDay();
             if($date->diffInDays($this->enddate) < $dayInterval){
-                $dayInterval = $date->diffInDays($this->enddate) + 1;
+                $dayInterval = $date->diffInDays($this->enddate);
             }
             $date->addDays($dayInterval);
             $dateRanges[$i]['end_date'] = $date->copy()->endOfDay();
@@ -54,54 +56,95 @@ class ShopeeOrderModel extends Model
     }
     
     public function getOrdersList(){
-        
         $path = '/api/v1/orders/get';
         $this->getDateRanges();
         $orderLists = [];
         $datas = [];
+        
         foreach($this->dateRanges as $dateRange){
-            $data = [
-                'order_status' => $this->status,
-                'partner_id' => shopee_partner_id(),
-                'shopid' => shopee_shop_id(),
-                'timestamp' => $this->timestamp,
-                'create_time_from' => $dateRange['start_date']->timestamp,
-                'create_time_to' => $dateRange['end_date']->timestamp,
-            ];
-            $datas [] = $data;
+            
+            if($this->status === 'PAID'){
+                
+                $statuses = ['READY_TO_SHIP','RETRY_SHIP','SHIPPED','TO_CONFIRM_RECEIVE','IN_CANCEL','COMPLETED'];
+                foreach($statuses as $status){
+                    $data = [
+                        'order_status' => $status,
+                        'partner_id' => shopee_partner_id(),
+                        'shopid' => shopee_shop_id(),
+                        'timestamp' => $this->timestamp,
+                        'create_time_from' => $dateRange['start_date']->timestamp,
+                        'create_time_to' => $dateRange['end_date']->timestamp,
+                    ];
+                    $datas [] = $data;    
+                }
+
+            }else{
+                $data = [
+                    'order_status' => $this->status,
+                    'partner_id' => shopee_partner_id(),
+                    'shopid' => shopee_shop_id(),
+                    'timestamp' => $this->timestamp,
+                    'create_time_from' => $dateRange['start_date']->timestamp,
+                    'create_time_to' => $dateRange['end_date']->timestamp,
+                ];
+                $datas [] = $data;
+            }
         }
         $contents = shopee_multiple_async_post($path,$datas);
         $orderLists = collect($contents)->pluck('orders')->flatten(1);
-        return $orderLists;
+        $this->orderLists = $orderLists; 
+        return $this;
     }
 
     public function getOrdersDetail(){
         
-        $orderLists = self::getOrdersList();
-        $orderDetails = [];
-        $orderSNs = [];
+        $orderLists = $this->orderLists;
+        $ordersDetail = [];
+
         $path = '/api/v1/orders/detail';
-        $data = [
-            'ordersn_list' => array_column($orderLists,'ordersn'),
-            'partner_id' => shopee_partner_id(),
-            'shopid' => shopee_shop_id(),
-            'timestamp' => $this->timestamp,
-        ];
-        $responseData = shopee_http_post($path,$data)->json();
-        if(array_key_exists('orders',$responseData)){
-            foreach($responseData['orders'] as $orderDetail){
-                $orderDetails[] = $orderDetail;
+        
+        $datas = [];
+        $ordersSnChunk = $orderLists->pluck('ordersn')->chunk(50)->toArray();
+        foreach($ordersSnChunk as $ordersSn){
+            $data = [
+                'ordersn_list' => collect($ordersSn)->values()->toArray(),
+                'partner_id' => shopee_partner_id(),
+                'shopid' => shopee_shop_id(),
+                'timestamp' => $this->timestamp,
+            ];
+            $datas [] = $data;
+        }
+        
+        $responseData = shopee_multiple_async_post($path,$datas);
+        // return response()->json();
+        foreach($responseData as $data){
+            foreach($data['orders'] as $orderDetail){
+                $ordersDetail[] = $orderDetail;
             }
         }
-        return $orderDetails;
+
+
+        $ordersEscrowDetail = $this->getOrdersEscrowDetail();
+
+        foreach($ordersDetail as $key => $orderDetail){
+            foreach($ordersEscrowDetail as $orderEscrowDetail){
+                if($orderDetail['ordersn'] === $orderEscrowDetail['ordersn']){
+                    $ordersDetail[$key]['_escrow_detail'] = $orderEscrowDetail;
+                }
+            }
+        }
+        $cachename = 'orders_detail_'.$this->startdate->format('Ymd').'_'.$this->enddate->format('Ymd'); 
+
+        Cache::put($cachename, $ordersDetail, env('CACHE_DURATION'));
+        return $ordersDetail;
     }
 
     public function getOrdersEscrowDetail(){
 
-        $orderLists = self::getOrdersList();
+        $orderLists = $this->orderLists;
         $path = '/api/v1/orders/my_income';
         $datas = [];
-        foreach($orderLists as $key => $orderList){
+        foreach($orderLists as $orderList){
             
             $data = [
                 'ordersn' => $orderList['ordersn'],
@@ -111,18 +154,14 @@ class ShopeeOrderModel extends Model
             ];
             $datas [] = $data;
         }
-        
-        $ordersDetails = shopee_multiple_async_post($path,$datas);
-        foreach($ordersDetails as $key => $orderDetail){
-            foreach($orderLists as $order){
-                if($orderDetail['order']['ordersn'] == $order['ordersn']){
-                    $ordersDetails[$key]['order']['update_time'] = $order['update_time']; 
-                    $ordersDetails[$key]['order']['order_status'] = $order['order_status']; 
-                }
-            }
+
+        $ordersEscrowDetail = [];
+        $responseData = shopee_multiple_async_post($path,$datas);
+        foreach($responseData as $data){
+            $ordersEscrowDetail[] = $data['order'];
         }
-        return $ordersDetails;
-    
+
+        return $ordersEscrowDetail;
     }
 
     public function getOrdersIncomeDetail(){

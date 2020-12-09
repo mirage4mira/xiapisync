@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\ShopeeOrderModel;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Cache;
 
 class ShopeeOrderController extends Controller
 {
@@ -19,7 +20,15 @@ class ShopeeOrderController extends Controller
         
         handleValidatorFails( $request,$validator);
         
-        $orderDetails = (new ShopeeOrderModel($request->status,new Carbon($request->start_date),new Carbon($request->end_date)))->getOrdersEscrowDetail();
+        $start_date = new Carbon($request->start_date);
+        $end_date = new Carbon($request->end_date);
+
+        $cacheName = 'orders_detail_'.$start_date->format('Ymd').'_'.$end_date->format('Ymd');
+        if(Cache::has($cacheName)){
+            $orderDetails =  Cache::get($cacheName);
+        }else{
+            $orderDetails = (new ShopeeOrderModel($request->status,$start_date,$end_date))->getOrdersList()->getOrdersDetail();
+        }
         return response()->json($orderDetails);
     }
 }

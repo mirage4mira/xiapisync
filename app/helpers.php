@@ -147,3 +147,7 @@ function setShopSettingSession(){
 function getShopSettingSession(){
     return Session::get('current_shop_settings');
 }
+
+function toClientDateformat(string $date){
+    return \Carbon\Carbon::parse($date)->format('m/d/Y');
+}
