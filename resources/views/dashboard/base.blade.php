@@ -60,11 +60,10 @@
 
     //set var
     var CSRF_TOKEN = '{{csrf_token()}}';
-
   </script>
 
   <link href="{{ asset('css/coreui-chartjs.css') }}" rel="stylesheet">
- 
+
   <!-- bootstrap -->
   <script src="https://code.jquery.com/jquery-3.5.1.min.js" integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin="anonymous"></script>
 
@@ -78,25 +77,28 @@
   <link href="https://cdn.datatables.net/1.10.22/css/jquery.dataTables.min.css" rel="stylesheet">
   <script src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js"></script>
   <script src="https://cdn.datatables.net/plug-ins/1.10.22/api/sum().js"></script>
-  
-  
+  <script type="text/javascript" src="https://cdn.datatables.net/fixedcolumns/3.2.1/js/dataTables.fixedColumns.min.js"></script>
+
+
   <!--sweet alert-->
   <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/datejs/1.0/date.min.js"></script>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/notify/0.4.2/notify.min.js"></script>
-  
+
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
   <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-beta.1/dist/css/select2.min.css" rel="stylesheet" />
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-beta.1/dist/js/select2.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-beta.1/dist/js/select2.min.js"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/js-cookie@rc/dist/js.cookie.min.js"></script>
 </head>
 
 
 
 <body class="c-app">
 
-  <div class="c-sidebar c-sidebar-dark c-sidebar-fixed c-sidebar-lg-show {{isset($minimizeSidebar) && $minimizeSidebar ? 'c-sidebar-minimized' : ''}}" id="sidebar">
+  <div class="c-sidebar c-sidebar-dark c-sidebar-fixed c-sidebar-lg-show " id="sidebar">
 
     @include('dashboard.shared.nav-builder')
 
@@ -121,10 +123,17 @@
 
   <script>
     @if($errors)
-    @foreach($errors as $error)
-    $.notify("{{$error}}");
+    @foreach($errors->all() as $error)
+    $.notify("{{$error}}",{autoHideDelay: 10000});
     @endforeach
-  @endif
+    @endif
+
+    
+    @if($success_msgs = Session::get('success_msgs'))
+    @foreach($success_msgs as $success_msg)
+    $.notify("{{$success_msg}}",'success');
+    @endforeach
+    @endif
   </script>
 
 

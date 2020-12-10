@@ -24,7 +24,7 @@ class CheckSettingsKey
         
         foreach($allSettingsKey as $key){
             if(!in_array($key,$settingsKey)){
-                return redirect('/shop-settings-setup')->with('errors',['The system is missing settings. Try to reenter the settings again!']);
+                return redirect('/shop-settings-setup')->withErrors(['The system is missing settings. Try to reenter the settings again!']);
             }
         }
         return $next($request);

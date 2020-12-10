@@ -4,22 +4,22 @@
     <button class="c-header-toggler c-class-toggler ml-3 d-md-down-none" type="button" data-target="#sidebar" data-class="c-sidebar-lg-show" responsive="true"><span class="c-header-toggler-icon"></span></button>
     <ul class="c-header-nav d-md-down-none">
       <div class="dropdown show">
-        <a class="btn btn-light dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        <a class="btn btn-outline-datk dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
           {{getShopsSession()[Auth::user()->current_shop_id]['platform']." - ".getShopsSession()[Auth::user()->current_shop_id]['shop_name']." - ".getShopsSession()[Auth::user()->current_shop_id]['shop_country']}}
         </a>
         <div class="dropdown-menu" aria-labelledby="dropdownMenuLink">
           @foreach(getShopsSession() as $shop_info)
-            @if($shop_info['id'] != Auth::user()->current_shop_id)
-              <a class="dropdown-item" href="/change-shop?id={{$shop_info['id']}}">{{$shop_info['platform']." - ".$shop_info['shop_name']." - ".$shop_info['shop_country']}}</a>
-            @endif
+          @if($shop_info['id'] != Auth::user()->current_shop_id)
+          <a class="dropdown-item" href="/change-shop?id={{$shop_info['id']}}">{{$shop_info['platform']." - ".$shop_info['shop_name']." - ".$shop_info['shop_country']}}</a>
+          @endif
           @endforeach
           <!-- <a class="dropdown-item" href="#">Action</a> -->
           <!-- <a class="dropdown-item" href="#">Another action</a> -->
           @if(count(getShopsSession()) > 1)
-            <div class="dropdown-divider"></div>
+          <div class="dropdown-divider"></div>
           @endif
-          <a class="dropdown-item" href="/sign-in-platform">
-            <i class="fa fa-plus-square-o" aria-hidden="true" style="font-size:1.1rem;  "></i>&nbsp;Add More Shop
+          <a class="dropdown-item flex align-items-center" href="/sign-in-platform">
+            <i class="fa fa-plus-square-o" aria-hidden="true" style="font-size:1.1rem;line-height: inherit;"></i>&nbsp;&nbsp;Add More Shop
           </a>
         </div>
       </div>
@@ -29,20 +29,24 @@
     </ul>
     <ul class="c-header-nav ml-auto mr-4">
 
-      <li class="c-header-nav-item d-md-down-none mx-2"><a class="c-header-nav-link">
-          <svg class="c-icon">
-            <use xlink:href="{{ env('APP_URL', '') }}/icons/sprites/free.svg#cil-bell"></use>
-          </svg></a>
-
+      <li class="c-header-nav-item d-md-down-none mx-2">
+        <a class="c-header-nav-link">
+          <small class="mr-1" id="sync-text"></small>
+          <button class="btn" onclick="syncLatestData()">
+            <i class="cil-sync"></i> Sync Now <br> 
+          </button>
+        </a>
       </li>
-      <li class="c-header-nav-item d-md-down-none mx-2"><a class="c-header-nav-link">
-          <form action="/logout" method="POST"> @csrf <button type="submit" class="btn btn-ghost-dark btn-block">Logout</button></form>
+      <li class="c-header-nav-item d-md-down-none mx-2">
+        <a class="c-header-nav-link">
+          <form action="/logout" method="POST"> @csrf <button type="submit" class="btn">Logout</button></form>
           <!-- <svg class="c-icon mr-2">
                 <use xlink:href="{{ env('APP_URL', '') }}/icons/sprites/free.svg#cil-account-logout"></use>
               </svg> -->
           <!-- <svg class="c-icon mr-2">
           <use xlink:href="{{ env('APP_URL', '') }}/icons/sprites/free.svg#cil-account-logout"></use>
         </svg> -->
+        </a>
       </li>
       <!-- <li class="c-header-nav-item dropdown"><a class="c-header-nav-link" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">
           <div class="c-avatar"><img class="c-avatar-img" src="{{ env('APP_URL', '') }}/assets/img/avatars/6.jpg" alt="user@email.com"></div>

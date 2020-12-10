@@ -10,7 +10,10 @@ use Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Validator;
 use Maatwebsite\Excel\Facades\Excel;
-use App\ExcelExport;
+use App\Exports\InventoryTemplateExport;
+use App\Imports\InventoryImport;
+use App\StockCost;
+use Symfony\Contracts\Service\Attribute\Required;
 
 class ShopeeProductController extends Controller
 {
@@ -27,7 +30,7 @@ class ShopeeProductController extends Controller
 
         $validator = Validator::make((array)$data, [
             'price' => 'required|numeric|gte:0.1',
-            'inbound' => 'required|numeric',
+            // 'inbound' => 'required|numeric',
             'available' => 'required|numeric',
             'reserved' => 'required|numeric',
             'days_to_supply' => 'required|numeric',
@@ -45,14 +48,14 @@ class ShopeeProductController extends Controller
                 'shop_id' => auth()->user()->current_shop_id,
                 'platform_item_id' => $data->item_id,
                 'platform_variation_id' => $data->variation_id,
-                'inbound' => $data->inbound,
+                // 'inbound' => $data->inbound,
                 'safety_stock' => $data->reserved,
                 'days_to_supply' => $data->days_to_supply
             ]);
         } else {
             $stock = tap(Stock::where(['id' => $data->stock_id])->where(['shop_id' => auth()->user()->current_shop_id]))
                 ->update([
-                    'inbound' => $data->inbound,
+                    // 'inbound' => $data->inbound,
                     'safety_stock' => $data->reserved,
                     'days_to_supply' => $data->days_to_supply
                 ])->first();
@@ -62,7 +65,7 @@ class ShopeeProductController extends Controller
             $updateStockData = ['product_id' => $stock->platform_item_id, 'stock_quantity' => $data->available];
             if ($stock->platform_variation_id) $updateStockData['variation_id'] = $stock->platform_variation_id;
             $shopeeProductModel->updateStock($updateStockData);
-            Cache::forget('items_detail');
+            Cache::forget('items_detail_'.Auth::id());
         }
 
 
@@ -70,15 +73,23 @@ class ShopeeProductController extends Controller
             $updatePriceData = ['product_id' => $stock->platform_item_id, 'price' => $data->price];
             if ($stock->platform_variation_id) $updatePriceData['variation_id'] = $stock->platform_variation_id;
             $shopeeProductModel->updatePrice($updatePriceData);
-            Cache::forget('items_detail');
+            Cache::forget('items_detail'.Auth::id());
         }
 
         return response()->json();
     }
-
+    
     function importExcel(Request $request){
         if($request->hasFile('excel')){
-            dd(123);
+
+            $request->validate([
+                'excel' => 'required|mimes:xlsx',
+            ]);
+
+            $sheets = Excel::import(new InventoryImport(),$request->file('excel'));
+            // dd($sheets);
+            // dd(123);
+            return redirect('/inventory')->with('success_msgs',['Inventory successfully updated!']);
         }
     }
 
@@ -119,7 +130,7 @@ class ShopeeProductController extends Controller
         }
 
         // }
-        // dd($rows);
-        return Excel::download( new ExcelExport($rows),'update-inventory-template.xlsx');
+        // dd($rows);git
+        return Excel::download( new InventoryTemplateExport($rows),'update-inventory-template.xlsx');
     }
 }

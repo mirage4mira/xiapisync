@@ -24,6 +24,7 @@
   .pull-right {
     float: right !important;
   }
+
   /* .dataTables_scrollHeadInner {
 width: 100% !important;
 }
@@ -41,20 +42,28 @@ table{
     height: 50px;
     overflow: hidden;
   }
+
   /* .dataTables_scroll
 { 
   position: relative;
   height: 400px;
     overflow:auto;
 } */
-/* .inventory-table,
+  /* .inventory-table,
 .inventory-table th,
 .inventory-table td {
   -webkit-box-sizing: content-box;
   -moz-box-sizing: content-box;
   box-sizing: content-box; */
+  /* } */
+  table.dataTable.table-striped.DTFC_Cloned tbody tr:nth-of-type(odd) {
+    background-color: #F3F3F3;
+}
+table.dataTable.table-striped.DTFC_Cloned tbody tr:nth-of-type(even) {
+    background-color: white;
 }
 </style>
+
 <div class="container-fluid">
   <div class="fade-in">
     <!-- /.row-->
@@ -64,11 +73,12 @@ table{
           <div class="card">
             <div class="card-header">Stocks <button class="btn btn-info float-right" type="button" onclick="inventoryTable.showImportFromExcelModal()">Import From Excel</button></div>
             <div class="card-body">
-              <div style="overflow-x:auto;">
-                <table class="table table-bordered inventory-table table-striped table-editable">
+              <div>
+                <!-- <table class="inventory-table"> -->
+                <table class="table table-bordered inventory-table table-striped table-editable" style="width:100%">
                   <thead>
                     <tr>
-                      <th style="min-width:250px">Item</th>
+                      <th style="min-width:250px;background-color:white;">Item</th>
                       <th class="text-center">Total</th>
                       <th class="text-center">Inbound</th>
                       <th class="text-center">Available</th>
@@ -82,97 +92,99 @@ table{
                       <th class="text-center">Average Monthly Sales</th>
                       <th class="text-center">Average Monthly Profit</th>
                       <th class="text-center">ROI</th>
+                      <th class="text-center">Rating Star</th>
+                      
                     </tr>
                   </thead>
                   <tbody>
                   </tbody>
                   <tfoot>
                     <tr>
-                        <th></th>
-                        <th></th>
-                        <th></th>
-                        <th></th>
-                        <th></th>
-                        <th></th>
-                        <th></th>
-                        <th></th>
-                        <th></th>
-                        <th></th>
-                        <th></th>
-                        <th></th>
-                        <th></th>
-                        <th></th>
+                      <th style="background-color:white;"></th>
+                      <th></th>
+                      <th></th>
+                      <th></th>
+                      <th></th>
+                      <th></th>
+                      <th></th>
+                      <th></th>
+                      <th></th>
+                      <th></th>
+                      <th></th>
+                      <th></th>
+                      <th></th>
+                      <th></th>
+                      <th></th>
+                      
                     </tr>
                   </tfoot>
-
                 </table>
               </div>
             </div>
           </div>
           <div class="inventory loading-modal loading"></div>
         </div>
-
-      </div>
-      <!-- /.col-->
-    </div>
-  </div>
-</div>
-
-<div class="cost-modal modal" tabindex="-1" role="dialog">
-  <div class="modal-dialog" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Edit Cost</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-      <div class="modal-body">
-
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-success mr-auto" onclick="inventoryTable.addNewCost()">Add Cost</button>
-        <button type="button" class="btn btn-primary" onclick="inventoryTable.saveCost()">Save changes</button>
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
       </div>
     </div>
   </div>
-</div>
 
+  <div class="cost-modal modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Edit Cost</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
 
-<div class="import-from-excel-modal modal" tabindex="-1" role="dialog">
-  <div class="modal-dialog" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Import from Excel</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-      <div class="modal-body">
-        <div class="row">
-          <div class="col-6 border-right d-flex align-items-center justify-content-center">
-            <a href="/inventory/download-excel-template"><button type="button" class="btn btn-info btn-lg">Download Template</button>
-          </div>
-          <div class="col-6 ">
-            <form action="/inventory/import-excel" method="post" class="text-center" enctype=”multipart/form-data”>
-            @csrf  
-            <!-- <div class="d-flex align-items-center justify-content-center"> -->
-                <input type="file" name="excel" required>
-                <button type="submit" class="btn btn-primary mt-2">Import</button>
-              <!-- </div> -->
-            </form>
-          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-success mr-auto" onclick="inventoryTable.addNewCost()">Add Cost</button>
+          <button type="button" class="btn btn-primary" onclick="inventoryTable.saveCost()">Save changes</button>
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
         </div>
       </div>
-      <div class="modal-footer">
-        <!-- <button type="button" class="btn btn-success mr-auto" onclick="inventoryTable.addNewCost()">Add Cost</button> -->
-        <!-- <button type="button" class="btn btn-primary" onclick="inventoryTable.saveCost()">Save changes</button> -->
-        <!-- <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button> -->
+    </div>
+  </div>
+
+  <div class="import-from-excel-modal modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Import from Excel</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="row">
+            <div class="col-6 border-right d-flex align-items-center justify-content-center">
+              <a href="/inventory/download-excel-template">
+                <button type="button" class="btn btn-info btn-lg">Download Template</button>
+              </a>
+            </div>
+            <div class="col-6">
+              <form action="/inventory/import-excel" method="post" class="text-center" enctype="multipart/form-data"> @csrf <!-- <div class="d-flex align-items-center justify-content-center"> -->
+                <input type="file" name="excel" required>
+                <button type="submit" class="btn btn-primary mt-2">Import</button>
+                <!-- </div> -->
+              </form>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <!-- <button type="button" class="btn btn-success mr-auto" onclick="inventoryTable.addNewCost()">Add Cost</button> -->
+          <!-- <button type="button" class="btn btn-primary" onclick="inventoryTable.saveCost()">Save changes</button> -->
+          <!-- <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button> -->
+        </div>
       </div>
     </div>
   </div>
 </div>
+
+
 @endsection
 
 @section('javascript')
@@ -222,6 +234,7 @@ table{
             data.wholesales = productData.wholesales;
             data.stock_id = variation._append.stock_id;
             data.currency = productData.currency;
+            data.rating_star = productData.rating_star;
             datas.push(data);
           })
         } else {
@@ -245,6 +258,7 @@ table{
           data.wholesales = productData.wholesales;
           data.stock_id = productData._append.stock_id;
           data.currency = productData.currency;
+          data.rating_star = productData.rating_star;
           datas.push(data);
         }
       });
@@ -311,6 +325,7 @@ table{
               <td><div class="text-center">0</div></td>
               <td><div class="text-center">0</div></td>
               <td><div class="text-center">0</div></td>
+              <td><div class="text-center">${Math.round(data.rating_star * 100) / 100}</div></td>
             </tr>`);
       });
       $('.inventory-table').on('focus', '[contenteditable="true"]', function() {
@@ -326,24 +341,24 @@ table{
         return $this;
       });
       $('.inventory-table td').on('blur', function(e) {
-        if(e){
+        if (e) {
           inventoryTable.updateStock(e);
         }
       });
     }
 
 
-    updateStock(e){
+    updateStock(e) {
       var obj = $(e.target);
       var tr = obj.closest('tr');
       var item_id = tr.data('item-id');
       var variation_id = tr.data('variation-id');
       var stock_id = tr.data('stock-id');
-      var inbound = tr.find('.inbound-input').html(); 
-      var available = tr.find('.available-input').html(); 
-      var reserved = tr.find('.reserved-input').html(); 
-      var days_to_supply = tr.find('.days-to-supply-input').html(); 
-      var price = tr.find('.price-input').html(); 
+      var inbound = tr.find('.inbound-input').html();
+      var available = tr.find('.available-input').html();
+      var reserved = tr.find('.reserved-input').html();
+      var days_to_supply = tr.find('.days-to-supply-input').html();
+      var price = tr.find('.price-input').html();
 
       $.ajax({
         async: true,
@@ -352,9 +367,9 @@ table{
         data: {
           _token: CSRF_TOKEN,
           data: JSON.stringify({
-            update_price: $(obj.children()[0]).hasClass('price-input'), 
-            update_stock_count: $(obj.children()[0]).hasClass('available-input'), 
-            item_id:item_id,
+            update_price: $(obj.children()[0]).hasClass('price-input'),
+            update_stock_count: $(obj.children()[0]).hasClass('available-input'),
+            item_id: item_id,
             variation_id,
             stock_id,
             inbound,
@@ -363,7 +378,7 @@ table{
             days_to_supply,
             price,
           })
-          
+
         },
         success: function(data) {
           console.log(data);
@@ -457,15 +472,19 @@ table{
       //     })
       //   }
       // }
-      
+
     }
 
 
-    saveCost(){
+    saveCost() {
       var data = [];
       $('.cost-modal .modal-body div.row').each(function(idx, obj) {
         var obj = $(obj);
-        data.push({'stock_cost_id':obj.data('stock-cost-id'),'from_date':obj.find('input[name="start_date"]').val() == "Past" ? EARLIEST_DATE : obj.find('input[name="start_date"]').val(),'cost':obj.find('input[name="cost"]').val()})
+        data.push({
+          'stock_cost_id': obj.data('stock-cost-id'),
+          'from_date': obj.find('input[name="start_date"]').val() == "Past" ? EARLIEST_DATE : obj.find('input[name="start_date"]').val(),
+          'cost': obj.find('input[name="cost"]').val()
+        })
       });
       console.log(data);
     }
@@ -490,18 +509,18 @@ table{
         end_date_input.val(next_start_date ? next_start_date.addDays(-1).toString(DATEPICKER_DATE_FORMAT) : "Present");
         // }
 
-        
-        var start_date_input = $('.cost-modal .modal-body  div.row:nth-child('+ (idx + 1) +') input[name="start_date"]');
-        var last_start_date_input = $('.cost-modal .modal-body  div.row:nth-child('+ (idx) +') input[name="start_date"]');
-        var second_last_start_date_input = $('.cost-modal .modal-body  div.row:nth-child('+ (idx - 1) +') input[name="start_date"]');
 
-        if(last_start_date_input.length){
+        var start_date_input = $('.cost-modal .modal-body  div.row:nth-child(' + (idx + 1) + ') input[name="start_date"]');
+        var last_start_date_input = $('.cost-modal .modal-body  div.row:nth-child(' + (idx) + ') input[name="start_date"]');
+        var second_last_start_date_input = $('.cost-modal .modal-body  div.row:nth-child(' + (idx - 1) + ') input[name="start_date"]');
+
+        if (last_start_date_input.length) {
           start_date_input.datepicker('destroy').datepicker({
-            startDate: last_start_date_input.val() == "Past" ? Date.parse(EARLIEST_DATE).addDays(1).toString(DATEPICKER_DATE_FORMAT): Date.parse(last_start_date_input.val()).addDays(1).toString(DATEPICKER_DATE_FORMAT),
+            startDate: last_start_date_input.val() == "Past" ? Date.parse(EARLIEST_DATE).addDays(1).toString(DATEPICKER_DATE_FORMAT) : Date.parse(last_start_date_input.val()).addDays(1).toString(DATEPICKER_DATE_FORMAT),
           });
-          if(second_last_start_date_input.length){
+          if (second_last_start_date_input.length) {
             last_start_date_input.datepicker('destroy').datepicker({
-              startDate: second_last_start_date_input.val() == "Past" ? Date.parse(EARLIEST_DATE).addDays(1).toString(DATEPICKER_DATE_FORMAT): Date.parse(second_last_start_date_input.val()).addDays(1).toString(DATEPICKER_DATE_FORMAT),
+              startDate: second_last_start_date_input.val() == "Past" ? Date.parse(EARLIEST_DATE).addDays(1).toString(DATEPICKER_DATE_FORMAT) : Date.parse(second_last_start_date_input.val()).addDays(1).toString(DATEPICKER_DATE_FORMAT),
               endDate: Date.parse(start_date_input.val()).addDays(-1).toString(DATEPICKER_DATE_FORMAT),
             });
           }
@@ -533,34 +552,38 @@ table{
         "dom": '<"pull-left"f><"pull-right"l>tip',
         "language": {
           "search": "Search Products:&nbsp;",
-          
+
         },
-        // scrollY: 400,
-        // scrollX: "100%",
+        scrollY: 400,
+        scrollX: true,
         scrollCollapse: true,
         paging: false,
         fixedColumns: true,
-        drawCallback: function (tfoot) {
+        fixedHeader: true,
+        autoWidth: true,
+        drawCallback: function(tfoot) {
           // $(".dataTables_scrollHeadInner").css({"width":"100%",'height':"100%"});
           // $('.inventory-table').css({"width":"100%"});
           var api = this.api();
           // api.fixedHeader.adjust();
           // console.log(api.column(8).footer());
-          $( api.column(8).footer() ).html(
-            
+          $(api.column(8).footer()).html(
+
             // money(1)
             money(api.column(8).data().sum())
-            );
-          },
-          //         "initComplete": function (settings, json) {  
-            // },
-            
-          });
-          // $(".inventory-table").wrap("<div style='overflow:auto; width:100%;position:relative;height:500px;'></div>");            
+          );
+        },
+        //         "initComplete": function (settings, json) {  
+        // },
 
-        // $('.inventory-table').wrap('<div class="dataTables_scroll" />');
-        // jQuery('.dataTable').wrap('<div class="dataTables_scroll" />');
-      // $('.inventory-table').columns.adjust().draw();
+      });
+      // $(".inventory-table").wrap("<div style='overflow:auto; width:100%;position:relative;height:400px;'></div>");            
+
+      // $('.inventory-table').wrap('<div class="dataTables_scroll" />');
+      // jQuery('.dataTable').wrap('<div class="dataTables_scroll" />');
+      // table.columns.adjust().draw();
+      $(".dataTables_scrollFootInner").css({"box-sizing":"content-box"})
+      $(".DTFC_LeftBodyLiner").css({"overflow":"hidden","width":"100%"})
       $('.dataTables_filter input[type="search"]').css({
         'width': '350px',
         'display': 'inline-block'
@@ -571,7 +594,7 @@ table{
       $('.inventory.loading-modal').removeClass("loading");
     }
 
-    showImportFromExcelModal(){
+    showImportFromExcelModal() {
       $('.import-from-excel-modal').modal('show');
     }
   }

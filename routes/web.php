@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Http;
 use App\ShopeeOrderModel;
 use App\ShopeeProductModel;
 use Carbon\Carbon;
-
+use Illuminate\Support\Facades\Cache;
 
 Route::webhooks('/get-shopee-push');
 Auth::routes();
@@ -25,7 +25,9 @@ Auth::routes();
         Route::get('/add-shop','ShopController@addShop');
 
         Route::get('/test',function(){
-            // dd(getShopsSession());
+            // dd(Cache::all());
+            // cookie()->queue('last_sync_time', time(), 84600,null,null,false,false);
+            dd(Cookie::get('last_sync_time'));
             Auth::logout();
             session()->flush();
             return redirect('/login');

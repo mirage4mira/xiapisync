@@ -81,11 +81,12 @@
   @yield('javascript')
   
 
+  
   <script>
     @if($errors)
-      @foreach($errors as $error)
-      $.notify("{{$error}}");
-      @endforeach
+    @foreach($errors->all() as $error)
+    $.notify("{{$error}}",{autoHideDelay: 10000});
+    @endforeach
     @endif
   </script>
 </body>

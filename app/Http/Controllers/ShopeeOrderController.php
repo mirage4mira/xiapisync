@@ -7,6 +7,7 @@ use App\ShopeeOrderModel;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Cache;
+use Auth;
 
 class ShopeeOrderController extends Controller
 {
@@ -22,10 +23,17 @@ class ShopeeOrderController extends Controller
         
         $start_date = new Carbon($request->start_date);
         $end_date = new Carbon($request->end_date);
-
-        $cacheName = 'orders_detail_'.$start_date->format('Ymd').'_'.$end_date->format('Ymd');
-        if(Cache::has($cacheName)){
-            $orderDetails =  Cache::get($cacheName);
+        
+        $cacheName = 'orders_detail_'.Auth::id();
+        $hasCache = Cache::has($cacheName);
+        
+        if($hasCache)$cache = Cache::get($cacheName);
+        
+        if(checkLastSyncTime() == false){
+            $orderDetails = (new ShopeeOrderModel($request->status,$start_date,$end_date))->getOrdersList()->getOrdersDetail();
+        }
+        elseif(isset($cache) && $cache['start_date'] == $start_date->format('Ymd') && $cache['end_date'] == $end_date->format('Ymd')){
+            $orderDetails = $cache['orders'];  
         }else{
             $orderDetails = (new ShopeeOrderModel($request->status,$start_date,$end_date))->getOrdersList()->getOrdersDetail();
         }

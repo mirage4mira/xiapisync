@@ -5,6 +5,7 @@ namespace App;
 use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Auth;
 
 class ShopeeOrderModel extends Model
 {   
@@ -133,9 +134,9 @@ class ShopeeOrderModel extends Model
                 }
             }
         }
-        $cachename = 'orders_detail_'.$this->startdate->format('Ymd').'_'.$this->enddate->format('Ymd'); 
-
-        Cache::put($cachename, $ordersDetail, env('CACHE_DURATION'));
+        $cachename = 'orders_detail_'.Auth::id(); 
+        Cache::put($cachename, ['start_date' =>$this->startdate->format('Ymd'),'end_date' =>$this->enddate->format('Ymd'),'orders' => $ordersDetail], env('CACHE_DURATION'));
+        updateLastSyncTime();
         return $ordersDetail;
     }
 

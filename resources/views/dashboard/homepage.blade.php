@@ -134,7 +134,7 @@
 <script src="{{ asset('js/coreui-chartjs.bundle.js') }}"></script>
 <script src="{{ asset('js/main.js') }}"></script>
 <script>
-  var start_date = Date.today().addDays(-89).toString(AJAX_DATE_FORMAT);
+  var start_date = Date.today().addYears(-1).toString(AJAX_DATE_FORMAT);
   var end_date = Date.today().toString(AJAX_DATE_FORMAT);
   var ordersEsrowData;
   var productsData;

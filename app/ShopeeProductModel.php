@@ -77,15 +77,19 @@ class ShopeeProductModel extends Model
 
         $products = collect($products)->sortBy('name')->values()->toArray();
         if($cache){
-            Cache::put('items_detail', $products, env('CACHE_DURATION'));
+            Cache::put('items_detail_'.Auth::id(), $products, env('CACHE_DURATION'));
+            updateLastSyncTime();
         }
         return $products;
     }
 
     public function getDetailedItemsDetail()
     {
-        if (Cache::has('items_detail')) {
-            $products = Cache::get('items_detail');
+        if(checkLastSyncTime() == false){
+            $products =  $this->getItemsDetail();
+        }
+        elseif(Cache::has('items_detail_'.Auth::id())) {
+            $products = Cache::get('items_detail_'.Auth::id());
         } else {
             $products =  $this->getItemsDetail();
         }
