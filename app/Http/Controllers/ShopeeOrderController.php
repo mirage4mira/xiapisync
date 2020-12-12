@@ -29,13 +29,12 @@ class ShopeeOrderController extends Controller
         
         if($hasCache)$cache = Cache::get($cacheName);
         
-        if(checkLastSyncTime() == false){
-            $orderDetails = (new ShopeeOrderModel($request->status,$start_date,$end_date))->getOrdersList()->getOrdersDetail();
-        }
-        elseif(isset($cache) && $cache['start_date'] == $start_date->format('Ymd') && $cache['end_date'] == $end_date->format('Ymd')){
+        if(checkLastSyncTime() == true && isset($cache) && $cache['start_date'] == $start_date->format('Ymd') && $cache['end_date'] == $end_date->format('Ymd')){
             $orderDetails = $cache['orders'];  
         }else{
             $orderDetails = (new ShopeeOrderModel($request->status,$start_date,$end_date))->getOrdersList()->getOrdersDetail();
+            Cache::put($cacheName, ['start_date' => $start_date->format('Ymd'), 'end_date' => $end_date->format('Ymd'), 'orders' => $orderDetails], env('CACHE_DURATION'));
+            updateLastSyncTimeCookie();
         }
         return response()->json($orderDetails);
     }

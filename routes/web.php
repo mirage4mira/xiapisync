@@ -25,8 +25,7 @@ Auth::routes();
         Route::get('/add-shop','ShopController@addShop');
 
         Route::get('/test',function(){
-            // dd(Cache::all());
-            // cookie()->queue('last_sync_time', time(), 84600,null,null,false,false);
+
             dd(Cookie::get('last_sync_time'));
             Auth::logout();
             session()->flush();

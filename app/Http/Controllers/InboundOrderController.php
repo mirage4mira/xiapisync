@@ -11,16 +11,16 @@ use Carbon\Carbon;
 class InboundOrderController extends Controller
 {
     public function index(){
-        $inboundOrders = InboundOrder::with('stocks')->where('shop_id',\Auth::user()->current_shop_id)->get();
+        $inboundOrders = InboundOrder::with('stocks')->where('shop_id',\Auth::user()->current_shop_id)->orderBy("updated_at","DESC")->get();
         $shopeeProductModel = new ShopeeProductModel(); 
-        $products = $shopeeProductModel->getDetailedItemsDetail();
+        $products = $shopeeProductModel->getCachedItemsDetail();
         return view('inventory.inbound.index',['inboundOrders'=> $inboundOrders,'products'=> $products]);
     }
 
     public function create(){
         $inboundOrders = InboundOrder::with('stocks')->where('shop_id',\Auth::user()->current_shop_id)->get();
         $shopeeProductModel = new ShopeeProductModel(); 
-        $products = $shopeeProductModel->getDetailedItemsDetail();
+        $products = $shopeeProductModel->getCachedItemsDetail();
         $suppliers = $inboundOrders->pluck('supplier_name')->unique()->sort()->toArray();
         return view('inventory.inbound.create_edit',['products'=> $products,'suppliers' => $suppliers,'inbound_order' => null]);
     }
@@ -45,7 +45,7 @@ class InboundOrderController extends Controller
             }
         });
 
-        return redirect('/inventory/inbound/'.$inboundOrder->id);
+        return redirect('/inventory/inbound')->with('success_msgs',['Inbound Order Successfully Added!']);
     }
 
     public function show(Request $request,$id){
@@ -53,7 +53,7 @@ class InboundOrderController extends Controller
         $inboundOrders = InboundOrder::with('stocks')->where('shop_id',\Auth::user()->current_shop_id)->get();
         $inboundOrder = InboundOrder::find($id);
         $shopeeProductModel = new ShopeeProductModel(); 
-        $products = $shopeeProductModel->getDetailedItemsDetail();
+        $products = $shopeeProductModel->getCachedItemsDetail();
         $suppliers = $inboundOrders->pluck('supplier_name')->unique()->sort()->toArray();
         return view('inventory.inbound.create_edit',['products'=> $products,'suppliers' => $suppliers,'inbound_order' => $inboundOrder]);
     }
@@ -90,7 +90,7 @@ class InboundOrderController extends Controller
         $inboundOrder->stocks()->detach();
         $inboundOrder->delete();
 
-        return redirect('/inventory/inbound');
+        return redirect('/inventory/inbound')->with("success_msgs",["Inbound Order Successfully Deleted"]);
     }
 
     public function received(Request $request,$id){

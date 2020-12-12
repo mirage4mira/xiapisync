@@ -16,7 +16,7 @@
                                 <form action="/inventory/inbound/{{$inbound_order->id}}" method="post" class="d-inline">
                                 @method('delete')
                                 @csrf
-                                    <button type="submit" class="btn btn-danger">Delete</button>
+                                    <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this Inbound Order?')">Delete</button>
                                 </form>
                             </div>
                             @else
@@ -45,7 +45,8 @@
                                         <div class="form-row">
                                             <div class="form-group col-md-12">
                                                 <label>Payment Date</label>
-                                                <input class="form-control" name="payment_date" required value="{{$inbound_order? toClientDateformat($inbound_order->payment_date) : ''}}">
+
+                                                <input class="form-control" name="payment_date" required value="{{$inbound_order? toClientDateformat($inbound_order->payment_date) : toClientDateformat(now())}}">
                                             </div>
                                             <div class="form-group col-md-12">
                                                 <label>Reference</label>
@@ -53,7 +54,7 @@
                                             </div>
                                             <div class="form-group col-md-12">
                                                 <label>Estimated Days To Supply</label>
-                                                <input type="number" min="0" step="1" class="form-control" name="days_to_supply" required value="{{$inbound_order? $inbound_order->days_to_supply : ''}}"> 
+                                                <input type="number" min="0" step="1" class="form-control" name="days_to_supply" required value="{{$inbound_order? $inbound_order->days_to_supply : 0}}"> 
                                             </div>
                                         </div>
                                     </div>
@@ -129,7 +130,7 @@
         </div>
         <div class="form-group col-md-1 d-flex justify-content-center">
             <!-- <label>Cost</label> -->
-            <button type="button" class="btn btn-sm btn-danger" onclick="$(this).closest('.item-row').remove();">Delete</button>
+            <button type="button" class="btn btn-sm btn-danger" onclick="$(this).closest('.item-row').remove();"><i class="cil-trash"></i></button>
         </div>
     </div>
 </div>
@@ -158,7 +159,7 @@
 
         obj.empty();
         if(received){
-            obj.append(`<button type="button" class="btn btn-danger" onclick='inboundOrderReceived(this,{{$inbound_order->id}},0)'>Revert Stock Received</button>`);
+            obj.append(`<button type="button" class="btn btn-warning" onclick='inboundOrderReceived(this,{{$inbound_order->id}},0)'>Revert Stock Received</button>`);
         }else{
             obj.append(`<button type="button" class="btn btn-success" onclick='inboundOrderReceived(this,{{$inbound_order->id}},1)'>Stock Received</button>`);
         }
@@ -207,7 +208,8 @@
             url: '/inventory/inbound/' + id + '/received',
             data: {_token: CSRF_TOKEN,received},
             success: function(data) {
-                displayStockReceived(received)
+                displayStockReceived(received);
+                $.notify("Inbound Order Successfully Updated","success");
             },
             error: ajaxErrorResponse,
             complete:function(){

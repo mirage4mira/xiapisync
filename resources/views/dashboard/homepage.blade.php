@@ -50,6 +50,9 @@
 
             </div>
             <div class="col-sm-12 col-md mb-sm-2 mb-0">
+              <div class="text-muted">Esrow Amount</div><strong id="escrow"></strong>
+            </div>
+            <div class="col-sm-12 col-md mb-sm-2 mb-0">
               <div class="text-muted">Profit</div><strong id="profit"></strong>
             </div>
             <div class="col-sm-12 col-md mb-sm-2 mb-0">
@@ -79,7 +82,7 @@
                     <th class="text-center">Orders</th>
                     <th class="text-center">Sales</th>
                     <th class="text-center">Esrow Amount</th>
-                    <th class="text-center">Cost</th>
+                    <!-- <th class="text-center">Cost</th> -->
                     <th class="text-center">Profit</th>
                   </tr>
                 </thead>
@@ -104,13 +107,13 @@
               <div class="row">
                 <div class="col-6">
                   <div class="c-callout c-callout-warning"><small class="text-muted">Low On Stock</small>
-                    <div class="text-value-lg" id="low-on-stock-text"></div>
+                    <a href="inventory?stock=low-on-stock"><div class="text-value-lg" id="low-on-stock-text"></div></a>
                   </div>
                 </div>
-
+                
                 <div class="col-6">
                   <div class="c-callout c-callout-danger"><small class="text-muted">Out Of Stock</small>
-                    <div class="text-value-lg" id="no-stock-text"></div>
+                    <a href="inventory?stock=out-of-stock"><div class="text-value-lg" id="no-stock-text"></div></a>
                   </div>
                 </div>
               </div>
@@ -134,7 +137,7 @@
 <script src="{{ asset('js/coreui-chartjs.bundle.js') }}"></script>
 <script src="{{ asset('js/main.js') }}"></script>
 <script>
-  var start_date = Date.today().addYears(-1).toString(AJAX_DATE_FORMAT);
+  var start_date = Date.today().addMonths(-3).toString(AJAX_DATE_FORMAT);
   var end_date = Date.today().toString(AJAX_DATE_FORMAT);
   var ordersEsrowData;
   var productsData;
@@ -218,7 +221,9 @@
             orders += 1;
             sales += parseFloat(order['total_amount']);
             escrow_amount += parseFloat(order['escrow_amount']);
-            profit += parseFloat(order['escrow_amount']) - 0;
+            profit += parseFloat(order['escrow_amount']) - order.items.reduce(function(a, b) {
+              return a + b._append.cost;
+            }, 0);
 
           }
         }, this);
@@ -228,7 +233,6 @@
            <td class="text-center">${orders}</td>
            <td class="text-center">${money(sales)}</td>
            <td class="text-center">${money(escrow_amount)}</td>
-           <td class="text-center">${0}</td>
            <td class="text-center">${money(profit)}</td>
           </tr>
         `);
@@ -259,7 +263,7 @@
       $('#products-selection').empty();
       $('#products-selection').append(`<option value=" "></option>`);
       data.forEach(function(content) {
-        if(content['variations'].length == 0 || content['variations'].length > 1){
+        if (content['variations'].length == 0 || content['variations'].length > 1) {
           $('#products-selection').append(`<option data-item-id="${content['item_id']}" value="${content['name']}">${content['item_sku']}</option>`);
         }
         content['variations'].forEach(function(variation) {
@@ -340,6 +344,7 @@
       var dates = [];
       var labels = [];
       var sales = 0;
+      var escrowAmount = 0;
       var profit = 0;
 
       var temp_date = Date.parse(this.start_date);
@@ -353,6 +358,7 @@
       }
 
       var salesData = new Array(labels.length).fill(0);
+      var escrowAmountData = new Array(labels.length).fill(0);
       var profitData = new Array(labels.length).fill(0);
       var orders = 0;
       var qty_sold = 0;
@@ -365,21 +371,39 @@
                 if ((orderItem.item_id == this.item.itemId && orderItem.variation_id == this.item.variationId) || (orderItem.item_id == this.item.itemId && this.item.variationId == 0)) {
                   var quantity_purchased = parseFloat(orderItem['variation_quantity_purchased']);
                   var item_sales_amount = parseFloat(orderItem['variation_discounted_price']) * quantity_purchased;
+                  var item_cost = orderItem._append.cost * quantity_purchased;
+                  
                   salesData[key] += item_sales_amount;
                   sales += item_sales_amount;
 
-                  profitData[key] += item_sales_amount - 0;
-                  profit += item_sales_amount - 0;
+                  var _escrow_amount = item_sales_amount - ((result['total_amount'] - result['escrow_amount'])/ result['_append']['item_count']);
+                  escrowAmount += _escrow_amount
+                  escrowAmountData[key] += _escrow_amount;
+
+                  profitData[key] += _escrow_amount - item_cost;
+                  profit += _escrow_amount - item_cost;
                   qty_sold += quantity_purchased;
                 }
               }, this);
             } else {
               var total_amount = parseFloat(result['total_amount']);
-              var escrow_amount = parseFloat(result['escrow_amount']);
-              salesData[key] += total_amount;
+              var _escrow_amount = parseFloat(result['escrow_amount']);
+              var cost = 0;
+              // result['items'].forEach()
               sales += total_amount;
-              profitData[key] += escrow_amount - 0;
-              profit += escrow_amount - 0;
+              salesData[key] += total_amount;
+
+              escrowAmount += _escrow_amount;
+              escrowAmountData[key] += _escrow_amount;
+
+              var _profit = _escrow_amount - result['items'].reduce(function(a, b) {
+                return a + parseFloat(b._append.cost)
+              }, 0);
+              profit += _profit
+              profitData[key] += _profit;
+
+              orders++;
+
             }
           }
         }, this);
@@ -396,10 +420,18 @@
           datasets: [{
               label: 'Sales',
               backgroundColor: coreui.Utils.hexToRgba(coreui.Utils.getStyle('--info'), 10),
-              borderColor: coreui.Utils.getStyle('--info'),
+              borderColor: coreui.Utils.getStyle('--primary'),
               pointHoverBackgroundColor: '#fff',
               borderWidth: 2,
               data: salesData.map(a => a.toFixed(2)),
+            },
+            {
+              label: 'Esrow Amount',
+              backgroundColor: 'transparent',
+              borderColor: coreui.Utils.getStyle('--info'),
+              pointHoverBackgroundColor: '#fff',
+              borderWidth: 2,
+              data: escrowAmountData.map(a => a.toFixed(2)),
             },
             {
               label: 'Profit',
@@ -453,6 +485,7 @@
       });
 
       $('#sales').html('$' + money(sales));
+      $('#escrow').html('$' + money(escrowAmount));
       $('#profit').html('$' + money(profit));
 
       if (this.item) {
@@ -460,14 +493,14 @@
         $('#orders').html(qty_sold);
       } else {
         $('#orders_text').html('Orders');
-        $('#orders').html(this.ordersEsrowData.length);
+        $('#orders').html(orders);
       }
 
       $('.sales-graph.loading-modal').removeClass("loading");
     }
   }
 
-  var salesGraph = new SalesGraph(status, Date.parse(start_date).addDays(60).toString(AJAX_DATE_FORMAT), end_date);
+  var salesGraph = new SalesGraph(status, Date.parse(end_date).addMonths(-1).toString(AJAX_DATE_FORMAT), end_date);
 
 
   class InventoryAlert {
@@ -481,79 +514,94 @@
     }
 
     loadInventoryAlert() {
-      var itemsThreeMonthsSoldQty = [];
+      // var itemsThreeMonthsSoldQty = [];
 
-      ordersEsrowData.forEach(function(order) {
-        order['items'].forEach(function(soldItem) {
-          var existed = false;
-          itemsThreeMonthsSoldQty.forEach(function(itemThreeMonthsSoldQty) {
-            if (itemThreeMonthsSoldQty.item_id == soldItem.item_id && itemThreeMonthsSoldQty.variation_id == soldItem.variation_id) {
-              itemThreeMonthsSoldQty.quantity_sold_in_3_months += soldItem.quantity_purchased;
-              existed = true;
-            }
-          })
-          if (existed === false) {
-            itemsThreeMonthsSoldQty.push({
-              item_id: soldItem.item_id,
-              variation_id: soldItem.variation_id,
-              quantity_sold_in_3_months: soldItem.quantity_purchased
-            });
-          }
-        });
-      });
+      // ordersEsrowData.forEach(function(order) {
+      //   order['items'].forEach(function(soldItem) {
+      //     var existed = false;
+      //     itemsThreeMonthsSoldQty.forEach(function(itemThreeMonthsSoldQty) {
+      //       if (itemThreeMonthsSoldQty.item_id == soldItem.item_id && itemThreeMonthsSoldQty.variation_id == soldItem.variation_id) {
+      //         itemThreeMonthsSoldQty.quantity_sold_in_3_months += soldItem.quantity_purchased;
+      //         existed = true;
+      //       }
+      //     })
+      //     if (existed === false) {
+      //       itemsThreeMonthsSoldQty.push({
+      //         item_id: soldItem.item_id,
+      //         variation_id: soldItem.variation_id,
+      //         quantity_sold_in_3_months: soldItem.quantity_purchased
+      //       });
+      //     }
+      //   });
+      // });
 
-      var itemsStockData = [];
+      // var itemsStockData = [];
+
+      // productsData.forEach(function(productData) {
+      //   if (productData.variations.length) {
+      //     productData.variations.forEach(function(variation) {
+      //       var itemStockData = {};
+      //       itemStockData.item_id = productData.item_id;
+      //       itemStockData.variation_id = variation.variation_id;
+      //       itemStockData.inbound = variation._append.inbound;
+      //       itemStockData.days_to_supply = variation._append.days_to_supply;
+      //       itemStockData.safety_stock = variation._append.safety_stock;
+      //       itemStockData.average_monthly_sold_qty = 0;
+      //       itemStockData.current_stock = variation.stock;
+      //       itemsStockData.push(itemStockData);
+      //     });
+      //   } else {
+      //     var itemStockData = {};
+      //     itemStockData.item_id = productData.item_id;
+      //     itemStockData.variation_id = productData.variation_id;
+      //     itemStockData.inbound = productData._append.inbound;
+      //     itemStockData.days_to_supply = productData._append.days_to_supply;
+      //     itemStockData.safety_stock = productData._append.safety_stock;
+      //     itemStockData.average_monthly_sold_qty = 0;
+      //     itemStockData.current_stock = productData['stock'];
+      //     itemsStockData.push(itemStockData);
+      //   }
+      // });
+
+      // var low_on_stock = 0;
+      // var no_stock = 0;
+
+      // itemsStockData.forEach(function(itemStockData) {
+
+      //   itemsThreeMonthsSoldQty.forEach(function(itemThreeMonthsSoldQty) {
+      //     if (itemStockData.item_id == itemThreeMonthsSoldQty.item_id && itemStockData.variation_id == itemThreeMonthsSoldQty.variation_id) {
+      //       itemStockData.average_monthly_sold_qty = (itemThreeMonthsSoldQty.quantity_sold_in_3_months / 3);
+      //     }
+      //   });
+      //   if ((itemStockData.current_stock - parseInt(itemStockData.safety_stock) + (itemStockData.inbound / parseInt(itemStockData.days_to_supply) * 30)) < itemStockData.average_monthly_sold_qty) {
+      //     itemStockData.low_on_stock = true;
+      //     low_on_stock += 1;
+      //   } else {
+      //     itemStockData.low_on_stock = false;
+      //   }
+
+      //   if (itemStockData.current_stock == 0) {
+      //     no_stock += 1;
+      //   }
+      // });
+      // console.log(itemsStockData);
+      var low_on_stock = 0;
+      var out_of_stock = 0;
 
       productsData.forEach(function(productData) {
         if (productData.variations.length) {
           productData.variations.forEach(function(variation) {
-            var itemStockData = {};
-            itemStockData.item_id = productData.item_id;
-            itemStockData.variation_id = variation.variation_id;
-            itemStockData.inbound = variation._append.inbound;
-            itemStockData.days_to_supply = variation._append.days_to_supply;
-            itemStockData.safety_stock = variation._append.safety_stock;
-            itemStockData.average_monthly_sold_qty = 0;
-            itemStockData.current_stock = variation.stock;
-            itemsStockData.push(itemStockData);
+            if(variation.stock == 0)out_of_stock++;
+            else if(variation._append.low_on_stock)low_on_stock++;
           });
         } else {
-          var itemStockData = {};
-          itemStockData.item_id = productData.item_id;
-          itemStockData.variation_id = productData.variation_id;
-          itemStockData.inbound = productData._append.inbound;
-          itemStockData.days_to_supply = productData._append.days_to_supply;
-          itemStockData.safety_stock = productData._append.safety_stock;
-          itemStockData.average_monthly_sold_qty = 0;
-          itemStockData.current_stock = productData['stock'];
-          itemsStockData.push(itemStockData);
-        }
-      });
-
-      var low_on_stock = 0;
-      var no_stock = 0;
-
-      itemsStockData.forEach(function(itemStockData) {
-
-        itemsThreeMonthsSoldQty.forEach(function(itemThreeMonthsSoldQty) {
-          if (itemStockData.item_id == itemThreeMonthsSoldQty.item_id && itemStockData.variation_id == itemThreeMonthsSoldQty.variation_id) {
-            itemStockData.average_monthly_sold_qty = (itemThreeMonthsSoldQty.quantity_sold_in_3_months / 3);
-          }
-        });
-        if ((itemStockData.current_stock - parseInt(itemStockData.safety_stock) + (itemStockData.inbound / parseInt(itemStockData.days_to_supply) * 30)) < itemStockData.average_monthly_sold_qty) {
-          itemStockData.low_on_stock = true;
-          low_on_stock += 1;
-        } else {
-          itemStockData.low_on_stock = false;
-        }
-
-        if (itemStockData.current_stock == 0) {
-          no_stock += 1;
+          if(productData.stock == 0)out_of_stock++;
+          else if(productData._append.low_on_stock)low_on_stock++;
         }
       });
 
       $('#low-on-stock-text').html(low_on_stock);
-      $('#no-stock-text').html(no_stock);
+      $('#no-stock-text').html(out_of_stock);
 
       $('.inventory-alert.loading-modal').removeClass("loading");
     }

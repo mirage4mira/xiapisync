@@ -153,7 +153,7 @@ function toClientDateformat(string $date){
     return \Carbon\Carbon::parse($date)->format('m/d/Y');
 }
 
-function updateLastSyncTime(){
+function updateLastSyncTimeCookie(){
     cookie()->queue('last_sync_time', now()->timestamp, env('CACHE_DURATION')/60,null,null,false,false);
 }
 

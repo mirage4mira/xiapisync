@@ -19,8 +19,11 @@ class ShopeeProductController extends Controller
 {
     public function getProductsDetail()
     {
+
         $shopeeProductModel = new ShopeeProductModel(); 
-        $products = $shopeeProductModel->getDetailedItemsDetail();
+        
+        $products = $shopeeProductModel->getCachedItemsDetail();
+
         return response()->json($products);
     }
 
@@ -97,7 +100,7 @@ class ShopeeProductController extends Controller
         $rows = [];
         $rows[] = ['Stock ID','Item Name','Item Variation & SKU','Days To Supply','Safety Stock','Cost (initial)','Cost (now)'];
         $stocks = Stock::with('costs')->where('shop_id',auth()->user()->current_shop_id)->get();
-        $products = (new ShopeeProductModel)->getDetailedItemsDetail();
+        $products = (new ShopeeProductModel)->getCachedItemsDetail();;
         // dd($stocks);
         foreach($stocks as $stock){
             foreach($products as $product){

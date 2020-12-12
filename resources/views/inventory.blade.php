@@ -8,7 +8,12 @@
     font-size: 0.7rem;
 
   }
-
+  tr:nth-child(2) th{
+    padding: 0 !important;
+  }
+  tr:nth-child(2) th input{
+    width: 100%;
+  }
   td {
     padding: 0 !important;
   }
@@ -73,12 +78,13 @@ table.dataTable.table-striped.DTFC_Cloned tbody tr:nth-of-type(even) {
           <div class="card">
             <div class="card-header">Stocks <button class="btn btn-info float-right" type="button" onclick="inventoryTable.showImportFromExcelModal()">Import From Excel</button></div>
             <div class="card-body">
-              <div>
+              <div style="overflow:hidden;">
                 <!-- <table class="inventory-table"> -->
-                <table class="table table-bordered inventory-table table-striped table-editable" style="width:100%">
+                <table class="table table-bordered inventory-table table-striped table-editable">
                   <thead>
                     <tr>
                       <th style="min-width:250px;background-color:white;">Item</th>
+                      <th class="text-center">Stock Status</th>
                       <th class="text-center">Total</th>
                       <th class="text-center">Inbound</th>
                       <th class="text-center">Available</th>
@@ -93,7 +99,24 @@ table.dataTable.table-striped.DTFC_Cloned tbody tr:nth-of-type(even) {
                       <th class="text-center">Average Monthly Profit</th>
                       <th class="text-center">ROI</th>
                       <th class="text-center">Rating Star</th>
-                      
+                    </tr>
+                    <tr id="filterrow">
+                      <th style="min-width:250px;background-color:white;"></th>
+                      <th class="text-center"></th>
+                      <th class="text-center"></th>
+                      <th class="text-center"></th>
+                      <th class="text-center"></th>
+                      <th class="text-center"></th>
+                      <th class="text-center"></th>
+                      <th class="text-center"></th>
+                      <th class="text-center"></th>
+                      <th class="text-center"></th>
+                      <th class="text-center"></th>
+                      <th class="text-center"></th>
+                      <th class="text-center"></th>
+                      <th class="text-center"></th>
+                      <th class="text-center"></th>
+                      <th class="text-center"></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -101,6 +124,7 @@ table.dataTable.table-striped.DTFC_Cloned tbody tr:nth-of-type(even) {
                   <tfoot>
                     <tr>
                       <th style="background-color:white;"></th>
+                      <th></th>
                       <th></th>
                       <th></th>
                       <th></th>
@@ -235,6 +259,12 @@ table.dataTable.table-striped.DTFC_Cloned tbody tr:nth-of-type(even) {
             data.stock_id = variation._append.stock_id;
             data.currency = productData.currency;
             data.rating_star = productData.rating_star;
+            data.stock_status = variation.stock?(variation._append.low_on_stock?"Low On Stock":"Good"):"Out Of Stock";
+            data.additional_stock_required = variation._append.additional_stock_required;
+            data.avg_monthly_profit = variation._append.avg_monthly_profit;
+            data.avg_monthly_quantity = variation._append.avg_monthly_quantity;
+            data.avg_monthly_sales = variation._append.avg_monthly_sales;
+            data.avg_monthly_cost = variation._append.avg_monthly_cost;
             datas.push(data);
           })
         } else {
@@ -259,6 +289,12 @@ table.dataTable.table-striped.DTFC_Cloned tbody tr:nth-of-type(even) {
           data.stock_id = productData._append.stock_id;
           data.currency = productData.currency;
           data.rating_star = productData.rating_star;
+          data.stock_status = productData.stock?(productData._append.low_on_stock?"Low On Stock":"Good"):"Out Of Stock";
+          data.additional_stock_required = productData._append.additional_stock_required;
+          data.avg_monthly_profit = productData._append.avg_monthly_profit;
+          data.avg_monthly_quantity = productData._append.avg_monthly_quantity;
+          data.avg_monthly_sales = productData._append.avg_monthly_sales;
+          data.avg_monthly_cost = productData._append.avg_monthly_cost;
           datas.push(data);
         }
       });
@@ -276,6 +312,7 @@ table.dataTable.table-striped.DTFC_Cloned tbody tr:nth-of-type(even) {
     }
 
     loadTableRow(datas) {
+ 
       datas.forEach(function(data) {
 
         var priceTooltipText;
@@ -302,7 +339,7 @@ table.dataTable.table-striped.DTFC_Cloned tbody tr:nth-of-type(even) {
           costTooltipText = costTooltipTextArr.join("&#013;");
         }
 
-        console.log(data.days_to_supply);
+        // console.log(data.days_to_supply);
         $('table.inventory-table tbody').append(`
             <tr data-item-id="${data.item_id}" data-variation-id="${data.variation_id}" data-stock-id="${data.stock_id}">
               <td><div class="d-flex">
@@ -312,6 +349,7 @@ table.dataTable.table-striped.DTFC_Cloned tbody tr:nth-of-type(even) {
                   <div>${data.variation_name || ''} ${data.sku ? '[' + data.sku + ']':'' }</div>
                 </div>
               </div></td>
+              <td><div class="text-center"><span class="badge badge-${data.stock_status == "Good"?"success":(data.stock_status == "Low On Stock"?"warning" : "danger")}">${data.stock_status}<br>${data.additional_stock_required?`- ${data.additional_stock_required}`:''}</span></div></td>
               <td><div class="text-center">${data.total}</div></td>
               <td contenteditable='true'><div class="text-center inbound-input">${data.inbound}</div></td>
               <td contenteditable='true'><div class="text-center available-input">${data.available}</div></td>
@@ -321,13 +359,14 @@ table.dataTable.table-striped.DTFC_Cloned tbody tr:nth-of-type(even) {
               <td contenteditable='false' data-toggle="tooltip" data-placement="bottom" title="${costTooltipText}"><div class="text-center" onclick="inventoryTable.costModal(this)">${data.cost}</div></td>
               <td><div class="text-center">${money(data.asset_value)}</div></td>
               <td><div class="text-center">${data.precentage_asset_value}</div></td>
-              <td><div class="text-center">0</div></td>
-              <td><div class="text-center">0</div></td>
-              <td><div class="text-center">0</div></td>
-              <td><div class="text-center">0</div></td>
+              <td><div class="text-center">${data.avg_monthly_quantity}</div></td>
+              <td><div class="text-center">${data.avg_monthly_sales}</div></td>
+              <td><div class="text-center">${data.avg_monthly_profit}</div></td>
+              <td><div class="text-center">${Math.round((data.avg_monthly_profit/data.avg_monthly_cost) * 100 || 0)}</div></td>
               <td><div class="text-center">${Math.round(data.rating_star * 100) / 100}</div></td>
             </tr>`);
       });
+
       $('.inventory-table').on('focus', '[contenteditable="true"]', function() {
         var $this = $(this);
         $this.data('before', $this.html());
@@ -381,7 +420,7 @@ table.dataTable.table-striped.DTFC_Cloned tbody tr:nth-of-type(even) {
 
         },
         success: function(data) {
-          console.log(data);
+          // console.log(data);
         },
         error: ajaxErrorResponse
       })
@@ -486,7 +525,7 @@ table.dataTable.table-striped.DTFC_Cloned tbody tr:nth-of-type(even) {
           'cost': obj.find('input[name="cost"]').val()
         })
       });
-      console.log(data);
+      // console.log(data);
     }
     deleteStockCost(obj) {
       var obj = $(obj);
@@ -548,12 +587,20 @@ table.dataTable.table-striped.DTFC_Cloned tbody tr:nth-of-type(even) {
     }
 
     loadDataTable() {
+
+          // Setup - add a text input to each footer cell
+      $('.inventory-table thead tr#filterrow th').each( function (idx,ele) {
+          $(this).html( `<input type="text" class="form-control" onclick="stopPropagation(event);" ${idx == 0? `placeholder="Search"`:''}/>` );
+      } );
+
+      var api;
       var table = $('.inventory-table').dataTable({
         "dom": '<"pull-left"f><"pull-right"l>tip',
         "language": {
           "search": "Search Products:&nbsp;",
 
         },
+        orderCellsTop: true,
         scrollY: 400,
         scrollX: true,
         scrollCollapse: true,
@@ -561,22 +608,57 @@ table.dataTable.table-striped.DTFC_Cloned tbody tr:nth-of-type(even) {
         fixedColumns: true,
         fixedHeader: true,
         autoWidth: true,
+
         drawCallback: function(tfoot) {
           // $(".dataTables_scrollHeadInner").css({"width":"100%",'height':"100%"});
           // $('.inventory-table').css({"width":"100%"});
-          var api = this.api();
+          api = this.api();
           // api.fixedHeader.adjust();
-          // console.log(api.column(8).footer());
-          $(api.column(8).footer()).html(
+          // api.column(9).every(function() {
+          //   var sum = this
+          //     .data()
+          //     .reduce(function(a, b) {
+          //       var x = parseFloat(a);
+          //       var y = parseFloat(b);
+          //       return x + y;
+          //     }, 0);
+          //   console.log(sum); //alert(sum);
+          //   $(this.footer()).html(sum);
+          // });
+
+          var sum = api.column(9).data().reduce(function(a,b){
+            b = b.replace(/<[^>]*>?/gm, '').replace(/,/g ,"")
+            // console.log(b);
+            return a + parseFloat(b);
+
+          },0);
+          // console.log(sum);
+          $(api.column(9).footer()).html(
 
             // money(1)
-            money(api.column(8).data().sum())
+            money(sum)
           );
+
+
         },
         //         "initComplete": function (settings, json) {  
         // },
-
       });
+
+      var urlParams = new URLSearchParams(window.location.search);
+      var stock = urlParams.get('stock');
+      
+      if(stock){
+        console.log(stock.replaceAll("-",' '));
+        api.column(1).search(stock.replaceAll("-",' ')).draw();
+      }
+
+      $(".inventory-table thead input").on( 'keyup change', function () {
+        api
+            .column( $(this).parent().index()+':visible' )
+            .search( this.value )
+            .draw();
+    } );
       // $(".inventory-table").wrap("<div style='overflow:auto; width:100%;position:relative;height:400px;'></div>");            
 
       // $('.inventory-table').wrap('<div class="dataTables_scroll" />');
@@ -598,7 +680,15 @@ table.dataTable.table-striped.DTFC_Cloned tbody tr:nth-of-type(even) {
       $('.import-from-excel-modal').modal('show');
     }
   }
-
   var inventoryTable = new InventoryTable();
+
+  function stopPropagation(evt) {
+		if (evt.stopPropagation !== undefined) {
+			evt.stopPropagation();
+		} else {
+			evt.cancelBubble = true;
+		}
+	}
+
 </script>
 @endsection

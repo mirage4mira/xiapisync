@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 use Auth;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 class ShopeeProductModel extends Model
 {
 
@@ -15,6 +16,19 @@ class ShopeeProductModel extends Model
     public function __construct()
     {
         $this->timestamp = time();
+    }
+
+    public function getCachedItemsDetail(){
+        $cacheName = 'items_detail_'.Auth::id();
+
+        if(checkLastSyncTime() == true && Cache::has($cacheName)){
+            $products = Cache::get($cacheName);
+        }else{
+            $products = $this->getDetailedItemsDetail();
+            Cache::put($cacheName, $products, env('CACHE_DURATION'));
+            updateLastSyncTimeCookie();
+        }
+        return $products;
     }
 
     public function getItemsList()
@@ -50,12 +64,10 @@ class ShopeeProductModel extends Model
     public function getItemsDetail($item_ids = null)
     {
         $path = '/api/v1/item/get';
-        $cache = false;
 
         if(!$item_ids){
             $this->getItemsList();
             $item_ids = collect($this->itemsList)->pluck('item_id')->toArray();
-            $cache = true;
         }
 
         $datas = [];
@@ -76,94 +88,135 @@ class ShopeeProductModel extends Model
         }
 
         $products = collect($products)->sortBy('name')->values()->toArray();
-        if($cache){
-            Cache::put('items_detail_'.Auth::id(), $products, env('CACHE_DURATION'));
-            updateLastSyncTime();
-        }
+
         return $products;
     }
 
     public function getDetailedItemsDetail()
     {
-        if(checkLastSyncTime() == false){
-            $products =  $this->getItemsDetail();
-        }
-        elseif(Cache::has('items_detail_'.Auth::id())) {
-            $products = Cache::get('items_detail_'.Auth::id());
-        } else {
-            $products =  $this->getItemsDetail();
-        }
 
+        $products =  $this->getItemsDetail();
 
-        // $default_prep_cost = $settings['default_prep_cost'];
-        // $default_days_to_supply = $settings['default_days_to_supply'];
-        // $default_safety_stock = $settings['default_safety_stock'];
-
-        // $stocksToCreate = [];
         DB::transaction(function () use ($products) {
             $this->createInitialStockAndCost($products);
         });
+        $months = 6;
+        $daysInMonth = 30;
+        \Log::alert(now());
+        $start_date = now()->subDays($months * $daysInMonth);
+        $orderDetails = (new ShopeeOrderModel("PAID",$start_date,now()))->getOrdersList()->getOrdersDetail();
 
         $stocks = Stock::with(['costs', 'inbound_orders'])->where('shop_id', Auth::user()->current_shop_id)->get();
 
         foreach ($products as $key1 => $product) {
             if (!empty($product['variations'])) {
                 foreach ($product['variations'] as $key2 => $variation) {
-                    // $stockExisted = false;
-                    // $defaultCost = round($products[$key1]['variations'][$key2]['original_price'] * $default_cogs_percentage / 100,2);
+                    $create_time = Carbon::createFromTimeStamp($variation['create_time']);
+                    $daysDiff = $create_time->diffInDays(now());
+                    // \Log::alert($daysDiff);
+                    // \Log::alert($create_time);
+                    // \Log::alert($start_date);
                     foreach ($stocks as $stock) {
                         if ($variation['variation_id'] == $stock['platform_variation_id']) {
                             $cost = $stock->costs->sortByDesc('from_date')->first();
                             $products[$key1]['variations'][$key2]['_append']['stock_id'] = $stock->id;
                             $products[$key1]['variations'][$key2]['_append']['cost'] = $cost->cost;
                             $products[$key1]['variations'][$key2]['_append']['costs'] = $stock->costs->sortBy('from_date')->values()->toArray();
-                            // $products[$key1]['variations'][$key2]['_append']['prep_cost'] = $stock->prep_cost;
                             $products[$key1]['variations'][$key2]['_append']['inbound'] = $stock->inbound_orders->sum('pivot.quantity');
                             $products[$key1]['variations'][$key2]['_append']['safety_stock'] = $stock->safety_stock;
                             $products[$key1]['variations'][$key2]['_append']['days_to_supply'] = $stock->days_to_supply;
-                            // $stockExisted = true;
+
+                            $totalQtySold = 0;
+                            $totalSales = 0;
+                            $totalProfit = 0;
+                            $totalCost = 0;
+                            foreach($orderDetails as $orderDetail){
+                                foreach($orderDetail['items'] as $item){
+                                    if($item['item_id'] == $stock['platform_item_id'] && $item['variation_id'] == $stock['platform_variation_id']){
+                                        $totalQtySold += $item['variation_quantity_purchased'];
+
+                                        $sales = $item['variation_discounted_price'] * $item['variation_quantity_purchased'];
+                                        $totalSales += $sales; 
+
+                                        $cost = $item['variation_quantity_purchased'] * $item['_append']['cost'];
+                                        $totalCost += $cost;
+                                        
+                                        $fees = ($orderDetail['total_amount'] - $orderDetail['escrow_amount'] )/ $orderDetail['_append']['item_count'] * $item['variation_quantity_purchased']; 
+                                        
+                                        $totalProfit += $sales - $cost;
+                                    }
+                                }
+                            }
+                            if($daysDiff > ($months * $daysInMonth)){
+                                $products[$key1]['variations'][$key2]['_append']['avg_monthly_quantity'] = round($totalQtySold/$months,1);
+                                $products[$key1]['variations'][$key2]['_append']['avg_monthly_sales'] = round($totalSales/$months,2);
+                                $products[$key1]['variations'][$key2]['_append']['avg_monthly_cost'] = round($totalCost/$months,2);
+                                $products[$key1]['variations'][$key2]['_append']['avg_monthly_profit'] = round($totalProfit/$months,2);
+                            }else{
+ 
+                                $products[$key1]['variations'][$key2]['_append']['avg_monthly_quantity'] = round($totalQtySold/($daysDiff /$daysInMonth ),1);
+                                $products[$key1]['variations'][$key2]['_append']['avg_monthly_sales'] = round($totalSales/($daysDiff /$daysInMonth ),2);
+                                $products[$key1]['variations'][$key2]['_append']['avg_monthly_cost'] = round($totalCost/($daysDiff /$daysInMonth ),2);
+                                $products[$key1]['variations'][$key2]['_append']['avg_monthly_profit'] = round($totalProfit/($daysDiff /$daysInMonth ),2);
+                            }
+                            $additional_stock_required = Ceil(($products[$key1]['variations'][$key2]['_append']['avg_monthly_quantity'] - ($variation['stock'] - $stock->safety_stock + ($stock->inbound_orders->sum('pivot.quantity') / ($stock->days_to_supply?$stock->days_to_supply:1) * $daysInMonth)))/$daysInMonth * $stock->days_to_supply);
+                            $products[$key1]['variations'][$key2]['_append']['low_on_stock'] =  ($additional_stock_required > 0);
+                            $products[$key1]['variations'][$key2]['_append']['additional_stock_required'] = ($additional_stock_required > 0)? $additional_stock_required: null;
                         }
                     }
-                    // if(!$stockExisted){
-                    //     $products[$key1]['variations'][$key2]['_append']['stock_id'] = 0;
-                    //     $products[$key1]['variations'][$key2]['_append']['cost'] = $defaultCost;
-                    //     $products[$key1]['variations'][$key2]['_append']['costs'] = [['from_date' => '1970-01-01','cost' => $defaultCost ]];
-                    //     // $products[$key1]['variations'][$key2]['_append']['prep_cost'] = $default_prep_cost;
-                    //     $products[$key1]['variations'][$key2]['_append']['inbound'] = 0;
-                    //     $products[$key1]['variations'][$key2]['_append']['safety_stock'] = $default_safety_stock;
-                    //     $products[$key1]['variations'][$key2]['_append']['days_to_supply'] = $default_days_to_supply;                                
-                    // }
-
-
                 }
             } else {
-                // $defaultCost = round($products[$key1]['original_price'] * $default_cogs_percentage / 100,2);
-                // $stockExisted = false;
+                $create_time = Carbon::createFromTimeStamp($product['create_time']);
+                $daysDiff = $create_time->diffInDays(now());
                 foreach ($stocks as $stock) {
                     if ($product['item_id'] == $stock['platform_item_id']) {
                         $cost = $stock->costs->sortByDesc('from_date')->first();
                         $products[$key1]['_append']['stock_id'] = $stock->id;
                         $products[$key1]['_append']['cost'] = $cost->cost;
                         $products[$key1]['_append']['costs'] = $stock->costs->sortBy('from_date')->values()->toArray();
-                        // $products[$key1]['_append']['prep_cost'] = $stock->prep_cost;
                         $products[$key1]['_append']['inbound'] = $stock->inbound_orders->sum('pivot.quantity');
                         $products[$key1]['_append']['safety_stock'] = $stock->safety_stock;
                         $products[$key1]['_append']['days_to_supply'] = $stock->days_to_supply;
-                        // $stockExisted = true;
+                        $products[$key1]['_append']['avg_monthly_quantity'] = 0;
+                        $products[$key1]['_append']['avg_monthly_sales'] = 0;
+                        $products[$key1]['_append']['avg_monthly_profit'] = 0;
+
+                        $totalQtySold = 0;
+                        $totalSales = 0;
+                        $totalProfit = 0;
+                        $totalCost = 0;
+                        foreach($orderDetails as $orderDetail){
+                            foreach($orderDetail['items'] as $item){
+                                if($item['item_id'] == $stock['platform_item_id'] && $item['variation_id'] == $stock['platform_variation_id']){
+                                    $totalQtySold += $item['variation_quantity_purchased'];
+                                    $sales = $item['variation_discounted_price'] * $item['variation_quantity_purchased'];
+                                    $totalSales += $sales; 
+                                    
+                                    $cost = $item['variation_quantity_purchased'] * $item['_append']['cost']; 
+                                    $totalCost += $cost;
+                                    $fees = ($orderDetail['total_amount'] - $orderDetail['escrow_amount'] )/ $orderDetail['_append']['item_count'] * $item['variation_quantity_purchased'];
+                                    $totalProfit += $sales - $cost - $fees;
+                                }
+                            }
+                        }
+                        if($daysDiff > ($months * $daysInMonth)){
+                            $products[$key1]['_append']['avg_monthly_quantity'] = round($totalQtySold/$months,1);
+                            $products[$key1]['_append']['avg_monthly_sales'] = round($totalSales/$months,2);
+                            $products[$key1]['_append']['avg_monthly_cost'] = round($totalCost/$months,2);
+                            $products[$key1]['_append']['avg_monthly_profit'] = round($totalProfit/$months,2);
+                        }else{
+                            $products[$key1]['_append']['avg_monthly_quantity'] = round($totalQtySold/($daysDiff /$daysInMonth),1);
+                            $products[$key1]['_append']['avg_monthly_sales'] = round($totalSales/($daysDiff /$daysInMonth),2);
+                            $products[$key1]['_append']['avg_monthly_cost'] = round($totalCost/($daysDiff /$daysInMonth),2);
+                            $products[$key1]['_append']['avg_monthly_profit'] = round($totalProfit/($daysDiff /$daysInMonth),2);                            
+                        }
+
+                        $additional_stock_required = ceil(($products[$key1]['_append']['avg_monthly_quantity'] - ($product['stock'] - $stock->safety_stock + ($stock->inbound_orders->sum('pivot.quantity') / ($stock->days_to_supply?$stock->days_to_supply:1) * $daysInMonth)))/$daysInMonth * $stock->days_to_supply);
+                        $products[$key1]['_append']['low_on_stock'] =  ($additional_stock_required > 0);
+                        $products[$key1]['_append']['additional_stock_required'] = ($additional_stock_required > 0)? $additional_stock_required: null;
                     }
                 }
             }
-
-            // if(!$stockExisted){
-            //     $products[$key1]['_append']['stock_id'] = 0;
-            //     $products[$key1]['_append']['cost'] = $defaultCost;
-            //     $products[$key1]['_append']['costs'] = [['from_date' => '1970-01-01','cost' => $defaultCost ]];
-            //     // $products[$key1]['_append']['prep_cost'] = $default_prep_cost;
-            //     $products[$key1]['_append']['inbound'] = 0;
-            //     $products[$key1]['_append']['safety_stock'] = $default_safety_stock;
-            //     $products[$key1]['_append']['days_to_supply'] = $default_days_to_supply;
-            // }
-
         }
         return $products;
     }
@@ -188,7 +241,7 @@ class ShopeeProductModel extends Model
         } else {
             $responseData = shopee_http_post($updateStockPath, $data)->json();
         }
-        \Log::alert($responseData);
+        // \Log::alert($responseData);
         return $responseData['item'];
     }
 
@@ -212,7 +265,7 @@ class ShopeeProductModel extends Model
         } else {
             $responseData = shopee_http_post($updatePricePath, $data)->json();
         }
-        \Log::alert($responseData);
+        // \Log::alert($responseData);
         return $responseData['item'];
     }
 
