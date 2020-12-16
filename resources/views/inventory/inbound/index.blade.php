@@ -14,6 +14,10 @@
 #item-table td p{
     margin-bottom: 0;
 }
+
+.inbound-table tr:not(:last-child){
+    border-bottom:1px solid grey;
+}
 </style>
 <div class="container-fluid">
     <div class="fade-in">
@@ -23,7 +27,7 @@
                     <div class="card">
                         <div class="card-header">Inbound Orders <a href="/inventory/inbound/create" class="float-right"><button class="btn btn-success">Create Inbound</button></a></div>
                         <div class="card-body">
-                            <table class="table">
+                            <table class="table inbound-table">
                                 <thead>
                                     <tr>
                                         <th>Payment Date</th>
@@ -60,14 +64,14 @@
                                                                 @foreach($product['variations'] as $variation)
                                                                 @if($stock->platform_item_id == $product['item_id'] && $stock->platform_variation_id == $variation['variation_id'])
                                                                 <p>{{$product['name']}}</p>
-                                                                 <p>{{$variation['name']}} [{{$product['item_sku']}}{{$variation['variation_sku']}}]</p>
+                                                                 <p>{{$variation['name']}} {{$product['item_sku'] || $variation['variation_sku'] ? '['.$product['item_sku'].($product['item_sku']?' ':'').$variation['variation_sku'].']': '' }}</p>
                                                                 @break
                                                                 @endif
                                                                 @endforeach
                                                                 @else
                                                                 @if($stock->platform_item_id == $product['item_id'])
                                                                     <p>{{$product['name']}}</p>
-                                                                    <p>[{{$product['item_sku']}}]</p>
+                                                                    <p>{{$product['item_sku'] ? '['.$product['item_sku']."]" : ''}}</p>
                                                                     @break
                                                                 @endif
                                                                 @endif
@@ -79,13 +83,10 @@
                                                 </table>
                                                 </div>
                                             </td>
-                                            <?php
-                                            $diffInDays = now()->diffInDays(Carbon\Carbon::parse($inboundOrder->payment_date)->addDays($inboundOrder->days_to_supply),false);
-                                            ?>
                                             <td class="text-center">{{$inboundOrder->days_to_supply}}
-                                                @if($diffInDays > 0)
-                                                <br><span class="badge badge-primary">Arrive in {{$diffInDays}} {{$diffInDays > 1 ? "days": "day"}}</span>
-                                                @endif
+
+                                                <br><span class="badge badge-primary">{{$inboundOrder->days_to_arrive >= 0 ? "Arrive in" : "Late arrival" }}: {{$inboundOrder->days_to_arrive}} {{$inboundOrder->days_to_arrive > 1 ||  $inboundOrder->days_to_arrive < -1? "days": "day"}}</span>
+                       
                                             </td>
                                             <td class="text-center"><div class="received"></div></td>
                                             <td class="text-center"><div class="received-btn-div" data-received="{{$inboundOrder->stock_received}}"></div></td>
@@ -106,6 +107,7 @@
 <script src="{{ asset('js/main.js') }}"></script>
 <script>
     $(function(){
+
         $('.received-btn-div').each(function(idx,ele){
             ele = $(ele);
             var received_text_ele = ele.closest('tr').find('.received');
@@ -120,6 +122,9 @@
                 received_text_ele.html("No");
             }
         })
+        $('.inbound-table').dataTable({
+            "order":[]
+        });
     });
     
     function inboundOrderReceived(obj,received){

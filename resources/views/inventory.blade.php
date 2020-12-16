@@ -245,7 +245,7 @@ table.dataTable.table-striped.DTFC_Cloned tbody tr:nth-of-type(even) {
             data.name = productData.name;
             data.variation_name = variation.name;
             data.sku = productData.item_sku + " " + variation.variation_sku;
-            data.total = variation._append.inbound + variation.stock;
+            data.total = variation._append.inbound.reduce((a,b)=> a + b.pivot.quantity,0) + variation.stock;
             data.inbound = variation._append.inbound;
             data.available = variation.stock;
             data.reserved = variation._append.safety_stock;
@@ -275,7 +275,7 @@ table.dataTable.table-striped.DTFC_Cloned tbody tr:nth-of-type(even) {
           data.image = productData.images[0];
           data.name = productData.name;
           data.sku = productData.item_sku;
-          data.total = productData._append.inbound + productData.stock;
+          data.total = productData._append.inbound.reduce((a,b)=> a + b.pivot.quantity,0) + productData.stock;
           data.inbound = productData._append.inbound;
           data.available = productData.stock;
           data.reserved = productData._append.safety_stock;
@@ -339,7 +339,18 @@ table.dataTable.table-striped.DTFC_Cloned tbody tr:nth-of-type(even) {
           costTooltipText = costTooltipTextArr.join("&#013;");
         }
 
-        // console.log(data.days_to_supply);
+        var inboundTooltipText;
+        var inbound = 0;
+        if (data.inbound.length) {
+          var inboundTooltipTextArr = [];
+          data.inbound.forEach(function(inboundOrder) {
+            console.log(123);
+            inboundTooltipTextArr.push(inboundOrder.pivot.quantity + " @ " + Date.parse(inboundOrder.payment_date).toString(DATEPICKER_DATE_FORMAT));
+            inbound += parseFloat(inboundOrder.pivot.quantity);
+          });
+          inboundTooltipText = inboundTooltipTextArr.join("&#013;");
+        }
+        console.log(data.inbound);
         $('table.inventory-table tbody').append(`
             <tr data-item-id="${data.item_id}" data-variation-id="${data.variation_id}" data-stock-id="${data.stock_id}">
               <td><div class="d-flex">
@@ -351,11 +362,11 @@ table.dataTable.table-striped.DTFC_Cloned tbody tr:nth-of-type(even) {
               </div></td>
               <td><div class="text-center"><span class="badge badge-${data.stock_status == "Good"?"success":(data.stock_status == "Low On Stock"?"warning" : "danger")}">${data.stock_status}<br>${data.additional_stock_required?`- ${data.additional_stock_required}`:''}</span></div></td>
               <td><div class="text-center">${data.total}</div></td>
-              <td contenteditable='true'><div class="text-center inbound-input">${data.inbound}</div></td>
-              <td contenteditable='true'><div class="text-center available-input">${data.available}</div></td>
-              <td contenteditable='true'><div class="text-center reserved-input">${data.reserved}</div></td>
-              <td contenteditable='true'><div class="text-center days-to-supply-input">${data.days_to_supply}</div></td>
-              <td ${priceTooltipText?'onclick="alert(\'Price for item with wholesale prices are uneditable!\')"':"contenteditable='true'"}  data-toggle="tooltip" data-placement="bottom" title="${priceTooltipText}"><div class="text-center price-input">${data.price}</div></td>
+              <td><div class="text-center inbound-input" data-toggle="tooltip" data-placement="bottom" title="${inboundTooltipText}">${inbound}</div></td>
+              <td contenteditable='true' name="available"><div class="text-center available-input">${data.available}</div></td>
+              <td contenteditable='true' name="reserved"><div class="text-center reserved-input">${data.reserved}</div></td>
+              <td contenteditable='true' name="days-to-supply"><div class="text-center days-to-supply-input">${data.days_to_supply}</div></td>
+              <td ${priceTooltipText?'onclick="alert(\'Price for item with wholesale prices are uneditable!\')"':"contenteditable='true'"}  data-toggle="tooltip" data-placement="bottom" title="${priceTooltipText}" name="price"><div class="text-center price-input">${data.price}</div></td>
               <td contenteditable='false' data-toggle="tooltip" data-placement="bottom" title="${costTooltipText}"><div class="text-center" onclick="inventoryTable.costModal(this)">${data.cost}</div></td>
               <td><div class="text-center">${money(data.asset_value)}</div></td>
               <td><div class="text-center">${data.precentage_asset_value}</div></td>
@@ -389,18 +400,18 @@ table.dataTable.table-striped.DTFC_Cloned tbody tr:nth-of-type(even) {
 
     updateStock(e) {
       var obj = $(e.target);
+      console.log(obj);
       var tr = obj.closest('tr');
       var item_id = tr.data('item-id');
       var variation_id = tr.data('variation-id');
       var stock_id = tr.data('stock-id');
-      var inbound = tr.find('.inbound-input').html();
       var available = tr.find('.available-input').html();
       var reserved = tr.find('.reserved-input').html();
       var days_to_supply = tr.find('.days-to-supply-input').html();
       var price = tr.find('.price-input').html();
 
       $.ajax({
-        async: true,
+        async: false,
         type: 'POST',
         url: '/inventory/update-item',
         data: {
@@ -411,7 +422,6 @@ table.dataTable.table-striped.DTFC_Cloned tbody tr:nth-of-type(even) {
             item_id: item_id,
             variation_id,
             stock_id,
-            inbound,
             available,
             reserved,
             days_to_supply,
@@ -420,7 +430,7 @@ table.dataTable.table-striped.DTFC_Cloned tbody tr:nth-of-type(even) {
 
         },
         success: function(data) {
-          // console.log(data);
+          $.notify(`${_.startCase(obj.attr("name").replaceAll("-"," "))} Successfully Updated!`,"success");
         },
         error: ajaxErrorResponse
       })
@@ -451,6 +461,8 @@ table.dataTable.table-striped.DTFC_Cloned tbody tr:nth-of-type(even) {
       }, this);
       this.refreshCostDate();
 
+      $('.cost-modal').data('item-id',item_id);
+      $('.cost-modal').data('variation-id',variation_id);
       $('.cost-modal').modal('show');
     }
 
@@ -516,16 +528,33 @@ table.dataTable.table-striped.DTFC_Cloned tbody tr:nth-of-type(even) {
 
 
     saveCost() {
-      var data = [];
+      var data = {};
+
+      data.item_id = $('.cost-modal').data('item-id');
+      data.variation_id = $('.cost-modal').data('variation-id');
+      data._token = CSRF_TOKEN; 
+
+      data.costs = [];
       $('.cost-modal .modal-body div.row').each(function(idx, obj) {
         var obj = $(obj);
-        data.push({
+        data.costs.push({
           'stock_cost_id': obj.data('stock-cost-id'),
           'from_date': obj.find('input[name="start_date"]').val() == "Past" ? EARLIEST_DATE : obj.find('input[name="start_date"]').val(),
           'cost': obj.find('input[name="cost"]').val()
-        })
+        });
       });
-      // console.log(data);
+
+      $.ajax({
+        async: false,
+        type: 'POST',
+        url: '/inventory/update-cost',
+        data,
+        success: function(data) {
+          $.notify(`Cost Successfully Updated!`,"success");
+        window.location.reload();
+        },
+        error: ajaxErrorResponse
+      })
     }
     deleteStockCost(obj) {
       var obj = $(obj);

@@ -14,15 +14,16 @@ use App\Exports\InventoryTemplateExport;
 use App\Imports\InventoryImport;
 use App\StockCost;
 use Symfony\Contracts\Service\Attribute\Required;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class ShopeeProductController extends Controller
 {
     public function getProductsDetail()
     {
-
         $shopeeProductModel = new ShopeeProductModel(); 
         
-        $products = $shopeeProductModel->getCachedItemsDetail();
+        $products = $shopeeProductModel->getDetailedItemsDetail();
 
         return response()->json($products);
     }
@@ -68,7 +69,6 @@ class ShopeeProductController extends Controller
             $updateStockData = ['product_id' => $stock->platform_item_id, 'stock_quantity' => $data->available];
             if ($stock->platform_variation_id) $updateStockData['variation_id'] = $stock->platform_variation_id;
             $shopeeProductModel->updateStock($updateStockData);
-            Cache::forget('items_detail_'.Auth::id());
         }
 
 
@@ -76,10 +76,20 @@ class ShopeeProductController extends Controller
             $updatePriceData = ['product_id' => $stock->platform_item_id, 'price' => $data->price];
             if ($stock->platform_variation_id) $updatePriceData['variation_id'] = $stock->platform_variation_id;
             $shopeeProductModel->updatePrice($updatePriceData);
-            Cache::forget('items_detail'.Auth::id());
         }
-
         return response()->json();
+    }
+
+    function updateCost(Request $request){
+        
+        DB::transaction(function() use ($request){
+            $stock = Stock::where('shop_id',auth()->user()->current_shop_id)->where('platform_item_id',$request->item_id)->where('platform_variation_id',$request->variation_id)->first();
+            $stock->costs()->where('from_date','<>','1970-01-01')->delete();
+            foreach($request->all()['costs'] as $cost){
+                StockCost::updateOrCreate(['stock_id' => $stock->id,'from_date' => Carbon::parse($cost['from_date'])->format("Y-m-d")],['cost' => $cost['cost']]);
+            }
+        });
+        return response()->json($request->all());
     }
     
     function importExcel(Request $request){
@@ -100,7 +110,7 @@ class ShopeeProductController extends Controller
         $rows = [];
         $rows[] = ['Stock ID','Item Name','Item Variation & SKU','Days To Supply','Safety Stock','Cost (initial)','Cost (now)'];
         $stocks = Stock::with('costs')->where('shop_id',auth()->user()->current_shop_id)->get();
-        $products = (new ShopeeProductModel)->getCachedItemsDetail();;
+        $products = (new ShopeeProductModel)->getDetailedItemsDetail();;
         // dd($stocks);
         foreach($stocks as $stock){
             foreach($products as $product){
@@ -134,6 +144,8 @@ class ShopeeProductController extends Controller
 
         // }
         // dd($rows);git
-        return Excel::download( new InventoryTemplateExport($rows),'update-inventory-template.xlsx');
+        $excel = Excel::download( new InventoryTemplateExport($rows),'update-inventory-template.xlsx');
+ 
+        return $excel;
     }
 }

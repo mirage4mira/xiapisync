@@ -13,10 +13,13 @@
               <h4 class="card-title mb-0">Sales</h4>
             </div>
             <div class="col-4">
-              <input type="text" name="product" list="products-selection" id="product" class="form-control" placeholder="Search By Products" onchange="salesGraph.reloadGraphData(this);this.blur();" onfocus="this.value=''" />
+              <!-- <input type="text" name="product" list="products-selection" id="product" class="form-control" placeholder="Search By Products" onchange="salesGraph.reloadGraphData(this);this.blur();" onfocus="this.value=''" />
               <datalist id="products-selection">
                 <option></option>
-              </datalist>
+              </datalist> -->
+              <select type="text" name="product" id="products-selection" class="form-control" placeholder="Search By Products" onchange="salesGraph.reloadGraphData(this);this.blur();" onfocus="this.value=''">
+                <option>-- All --</option>
+              </select>              
             </div>
             <div class="col-3 d-flex flex-row">
               <input id="date1" onchange="salesGraph.reloadGraphData(this);" class="form-control" placeholder="Date Range">
@@ -146,6 +149,8 @@
 
   $(function() {
 
+    $('#products-selection').select2();
+
     getOrdersEscrowData(status, start_date, end_date).then(function(data) {
       ordersEsrowData = data;
       salesGraph.ordersEsrowData = ordersEsrowData;
@@ -221,8 +226,8 @@
             orders += 1;
             sales += parseFloat(order['total_amount']);
             escrow_amount += parseFloat(order['escrow_amount']);
-            profit += parseFloat(order['escrow_amount']) - order.items.reduce(function(a, b) {
-              return a + b._append.cost;
+            profit += parseFloat(order['escrow_amount']) - parseFloat(order['estimated_shipping_fee']) - order.items.reduce(function(a, b) {
+              return a + parseFloat(b._append.cost) * parseFloat(b.variation_quantity_purchased);
             }, 0);
 
           }
@@ -261,13 +266,13 @@
     setProductsSelection(data) {
 
       $('#products-selection').empty();
-      $('#products-selection').append(`<option value=" "></option>`);
+      $('#products-selection').append(`<option value=" ">-- All --</option>`);
       data.forEach(function(content) {
         if (content['variations'].length == 0 || content['variations'].length > 1) {
-          $('#products-selection').append(`<option data-item-id="${content['item_id']}" value="${content['name']}">${content['item_sku']}</option>`);
+          $('#products-selection').append(`<option data-item-id="${content['item_id']}">${content['name']} ${content['item_sku']}</option>`);
         }
         content['variations'].forEach(function(variation) {
-          $('#products-selection').append(`<option data-item-id="${content['item_id']}" data-variation-id="${variation['variation_id']}" value="${content['name']}">${variation['name'] || ''} ${(content['item_sku'] + variation['variation_sku']) ? '[' + (content['item_sku'] + variation['variation_sku']) +']' : ''}</option>`);
+          $('#products-selection').append(`<option data-item-id="${content['item_id']}" data-variation-id="${variation['variation_id']}">${content['name']} ${variation['name'] || ''} ${(content['item_sku'] + variation['variation_sku']) ? '[' + (content['item_sku'] + variation['variation_sku']) +']' : ''}</option>`);
         });
       })
     }
@@ -302,8 +307,8 @@
         this.end_date = _end_date.toString(AJAX_DATE_FORMAT);
       }
       //if input is product
-      else if (objId === "product") {
-        var _item = $('#products-selection option[value="' + obj.val() + '"]');
+      else if (objId === "products-selection") {
+        var _item = $('#products-selection :selected');
         var itemId = _item.data('item-id');
 
         if (!itemId) {
@@ -375,8 +380,10 @@
                   
                   salesData[key] += item_sales_amount;
                   sales += item_sales_amount;
-
-                  var _escrow_amount = item_sales_amount - ((result['total_amount'] - result['escrow_amount'])/ result['_append']['item_count']);
+                  // console.log(result['_esrow_detail']);
+                  var fees = parseFloat(result['_escrow_detail']['income_details']['seller_transaction_fee']) + parseFloat(result['_escrow_detail']['income_details']['service_fee']);
+                  var _escrow_amount = item_sales_amount - (item_sales_amount / result['_append']['item_amount'] * fees);
+                  // var _escrow_amount = item_sales_amount - (()/ result['_append']['item_count']);
                   escrowAmount += _escrow_amount
                   escrowAmountData[key] += _escrow_amount;
 
@@ -396,8 +403,8 @@
               escrowAmount += _escrow_amount;
               escrowAmountData[key] += _escrow_amount;
 
-              var _profit = _escrow_amount - result['items'].reduce(function(a, b) {
-                return a + parseFloat(b._append.cost)
+              var _profit = _escrow_amount - parseFloat(result['estimated_shipping_fee']) - result['items'].reduce(function(a, b) {
+                return a + (parseFloat(b._append.cost) * parseFloat(b.variation_quantity_purchased));
               }, 0);
               profit += _profit
               profitData[key] += _profit;

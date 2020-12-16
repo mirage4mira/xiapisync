@@ -28,7 +28,7 @@
                     <div class="col-md-6 text-center">
                         <img src="/images/lazada-logo.png" height="70px">
                         <div style="margin:20px 0px">
-                            <button class="btn btn-light" disabled style="cursor:context-menu">Coming Soon</button>
+                        <a href="{{$lazadaAuthLink}}"><button class="btn btn-primary">Sign in Lazada</button></a>
                         </div>
                     </div>
                 </div>

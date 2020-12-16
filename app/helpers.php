@@ -48,6 +48,7 @@ function shopee_multiple_async_post(string $path, array $datas){
     foreach($results as $result){
         if(isset($result['value'])){
             $content = json_decode($result['value']->getBody()->getContents(),true);
+
             if(isset($content['error'])){
                 \Log::error($content['error']);
                 \Log::error($content['msg']);
@@ -160,4 +161,10 @@ function updateLastSyncTimeCookie(){
 function checkLastSyncTime(){
     if(!Cookie::has('last_sync_time'))return false; 
     else return true;
+}
+
+function deleteLastSyncTime(){
+    Cookie::queue(
+        Cookie::forget('last_sync_time')
+    );
 }

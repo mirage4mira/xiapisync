@@ -9,6 +9,5 @@ class ProcessWebhookJob extends SpatieProcessWebhookJob
     public function handle()
     {   
         \Log::alert($this->webhookCall);
-
     }
 }

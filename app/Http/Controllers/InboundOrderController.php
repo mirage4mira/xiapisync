@@ -11,16 +11,17 @@ use Carbon\Carbon;
 class InboundOrderController extends Controller
 {
     public function index(){
-        $inboundOrders = InboundOrder::with('stocks')->where('shop_id',\Auth::user()->current_shop_id)->orderBy("updated_at","DESC")->get();
+        $inboundOrders = InboundOrder::with('stocks')->where('shop_id',\Auth::user()->current_shop_id)->get()->sortByDesc(function($o){ return $o->days_to_arrive;});
+        
         $shopeeProductModel = new ShopeeProductModel(); 
-        $products = $shopeeProductModel->getCachedItemsDetail();
+        $products = $shopeeProductModel->getDetailedItemsDetail();
         return view('inventory.inbound.index',['inboundOrders'=> $inboundOrders,'products'=> $products]);
     }
 
     public function create(){
         $inboundOrders = InboundOrder::with('stocks')->where('shop_id',\Auth::user()->current_shop_id)->get();
         $shopeeProductModel = new ShopeeProductModel(); 
-        $products = $shopeeProductModel->getCachedItemsDetail();
+        $products = $shopeeProductModel->getDetailedItemsDetail();
         $suppliers = $inboundOrders->pluck('supplier_name')->unique()->sort()->toArray();
         return view('inventory.inbound.create_edit',['products'=> $products,'suppliers' => $suppliers,'inbound_order' => null]);
     }
@@ -35,13 +36,15 @@ class InboundOrderController extends Controller
                 'reference' => $request->reference,
                 'days_to_supply' => $request->days_to_supply,
             ]);
-            foreach($request->items_id as $key => $item_id){
+            if($request->items_id){
+                foreach($request->items_id as $key => $item_id){
                 $stock = Stock::with('costs')->where('shop_id',\Auth::user()->current_shop_id)
-                    ->where('platform_item_id',$item_id)
-                    ->where('platform_variation_id',$request->variations_id[$key])
-                    ->first();
-
-                $inboundOrder->stocks()->attach($stock,['quantity' => $request->quantities[$key],'cost' => $request->costs[$key]]);
+                ->where('platform_item_id',$item_id)
+                ->where('platform_variation_id',$request->variations_id[$key])
+                        ->first();
+    
+                    $inboundOrder->stocks()->attach($stock,['quantity' => $request->quantities[$key],'cost' => $request->costs[$key]]);
+                }
             }
         });
 
@@ -53,7 +56,7 @@ class InboundOrderController extends Controller
         $inboundOrders = InboundOrder::with('stocks')->where('shop_id',\Auth::user()->current_shop_id)->get();
         $inboundOrder = InboundOrder::find($id);
         $shopeeProductModel = new ShopeeProductModel(); 
-        $products = $shopeeProductModel->getCachedItemsDetail();
+        $products = $shopeeProductModel->getDetailedItemsDetail();
         $suppliers = $inboundOrders->pluck('supplier_name')->unique()->sort()->toArray();
         return view('inventory.inbound.create_edit',['products'=> $products,'suppliers' => $suppliers,'inbound_order' => $inboundOrder]);
     }
@@ -71,16 +74,19 @@ class InboundOrderController extends Controller
             $inboundOrder->days_to_supply = $request->days_to_supply;
             $inboundOrder->save();
 
-            foreach($request->items_id as $key => $item_id){
-                $stock = Stock::with('costs')->where('shop_id',\Auth::user()->current_shop_id)
-                    ->where('platform_item_id',$item_id)
-                    ->where('platform_variation_id',$request->variations_id[$key])
-                    ->first();
+            if($request->items_id){
 
-                $inboundOrder->stocks()->attach($stock,['quantity' => $request->quantities[$key],'cost' => $request->costs[$key]]);
+                foreach($request->items_id as $key => $item_id){
+                    $stock = Stock::with('costs')->where('shop_id',\Auth::user()->current_shop_id)
+                        ->where('platform_item_id',$item_id)
+                        ->where('platform_variation_id',$request->variations_id[$key])
+                        ->first();
+    
+                    $inboundOrder->stocks()->attach($stock,['quantity' => $request->quantities[$key],'cost' => $request->costs[$key]]);
+                }
             }
     });
-    return redirect('/inventory/inbound/'.$inboundOrder->id);
+    return redirect('/inventory/inbound')->with("success_msgs",["Inbound Order Successfully Updated"]);
 
     }
 

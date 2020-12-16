@@ -59,7 +59,6 @@
                                         </div>
                                     </div>
                                 </div>
-                                <button type="button" class="btn btn-sm btn-success" onclick="addItemRow()">Add Item</button>
                                 <div class="row mt-3">
                                     <div class="col-7">
                                         Item
@@ -75,6 +74,7 @@
                                 <div id="items-div">
 
                                 </div>
+                                <button type="button" class="btn btn-sm btn-success" onclick="addItemRow(null,true)">Add Item</button>
 
                                 <button type="submit" class="btn btn-primary float-right">Save</button>
                             </form>
@@ -97,10 +97,10 @@
             <datalist id="item">
                 @foreach($products as $product)
                 @if(empty($product['variations']))
-                <option value="{{$product['name']}}" data-item-id="{{$product['item_id']}}" data-variation-id="0" data-cost="{{$product['_append']['cost']}}">[{{$product['item_sku']}}]</option>
+                <option value="{{$product['name']}}" data-item-id="{{$product['item_id']}}" data-variation-id="0" data-cost="{{$product['_append']['cost']}}">{{$product['item_sku'] ? '['.$product['item_sku'].']' : ''}}</option>
                 @else
                 @foreach($product['variations'] as $variation)
-                <option value="{{$product['name']}}" data-item-id="{{$product['item_id']}}" data-variation-id="{{$variation['variation_id']}}" data-cost="{{$variation['_append']['cost']}}">{{$variation['name']}} [{{$product['item_sku']." ".$variation['variation_sku']}}]</option>
+                <option value="{{$product['name']}}" data-item-id="{{$product['item_id']}}" data-variation-id="{{$variation['variation_id']}}" data-cost="{{$variation['_append']['cost']}}">{{$variation['name']}} {{$product['item_sku'] || $variation['variation_sku'] ? "[".$product['item_sku']." ".$variation['variation_sku']."]" : ''}}</option>
                 @endforeach
                 @endif
                 @endforeach
@@ -110,10 +110,10 @@
                 <option value=""></option>
                 @foreach($products as $product)
                 @if(empty($product['variations']))
-                <option data-item-id="{{$product['item_id']}}" data-variation-id="0" data-cost="{{$product['_append']['cost']}}" value="{{$product['item_id'].'|0'}}"> {{$product['name']}} <br> [{{$product['item_sku']}}]</option>
+                <option data-item-id="{{$product['item_id']}}" data-variation-id="0" data-cost="{{$product['_append']['cost']}}" value="{{$product['item_id'].'|0'}}"> {{$product['name']}} {{$product['item_sku'] ? '['.$product['item_sku'].']' : ''}}</option>
                 @else
                 @foreach($product['variations'] as $variation)
-                <option data-item-id="{{$product['item_id']}}" data-variation-id="{{$variation['variation_id']}}" data-cost="{{$variation['_append']['cost']}}" value="{{$product['item_id'].'|'.$variation['variation_id']}}">{{$product['name']}} <br> {{ $variation['name']}} [{{$product['item_sku']." ".$variation['variation_sku']}}]</option>
+                <option data-item-id="{{$product['item_id']}}" data-variation-id="{{$variation['variation_id']}}" data-cost="{{$variation['_append']['cost']}}" value="{{$product['item_id'].'|'.$variation['variation_id']}}">{{$product['name']}} <br> {{ $variation['name']}} {{$product['item_sku'] || $variation['variation_sku'] ? "[".$product['item_sku'].($product['item_sku']?" ":'').$variation['variation_sku']."]" : ''}}</option>
                 @endforeach
                 @endif
                 @endforeach
@@ -166,7 +166,7 @@
     }
     @endif
 
-    function addItemRow(data) {
+    function addItemRow(data,focus) {
        var itemRow = $('.item-row.d-none').clone().removeClass('d-none');
        $('#items-div').append(itemRow);
        if(data){
@@ -178,8 +178,10 @@
            itemRow.find('[name="costs[]"]').val(data.cost);
            
        }
-       itemRow.find('.item-select').select2();
-
+       var select = itemRow.find('.item-select').select2();
+       if(focus){
+        select.trigger('click');
+       }
         
     }
 
@@ -196,6 +198,11 @@
         obj.closest('.item-row').find("[name='items_id[]']").val(item_id);
         obj.closest('.item-row').find("[name='variations_id[]']").val(variation_id);
         obj.closest('.item-row').find("[name='costs[]']").val() ? '': obj.closest('.item-row').find("[name='costs[]']").val(cost);
+
+        console.log(obj.closest('.item-row').find("[name='quantities[]']"));
+        setTimeout(function(){
+            obj.closest('.item-row').find("[name='quantities[]']").focus();
+        },200);
     }
 
     function inboundOrderReceived(obj,id,received){

@@ -59,11 +59,11 @@ class ShopeeOrderModel extends Model
 
     public function getOrdersList()
     {
+
         $path = '/api/v1/orders/get';
         $this->getDateRanges();
-        $orderLists = [];
         $datas = [];
-
+  
         foreach ($this->dateRanges as $dateRange) {
 
             if ($this->status === 'PAID') {
@@ -93,21 +93,37 @@ class ShopeeOrderModel extends Model
             }
         }
         $contents = shopee_multiple_async_post($path, $datas);
-        $orderLists = collect($contents)->pluck('orders')->flatten(1);
-   
-        $this->orderLists = $orderLists;
+        unset($datas);
+ 
+        $this->orderLists = collect($contents)->pluck('orders')->flatten(1);
+
         return $this;
     }
 
     public function getOrdersDetail()
     {
-        $orderLists = $this->orderLists;
-        $ordersDetail = [];
+        $cacheName = 'completed_orders_detail_'.Auth::id();
+
+        if(Cache::has($cacheName)){
+            $cachedCompletedOrdersDetail = Cache::get($cacheName);
+        }else{
+            $cachedCompletedOrdersDetail = [];
+        }
+        $cachedCompletedOrdersDetailOrderSn = collect($cachedCompletedOrdersDetail)->pluck("ordersn")->toArray(); 
+        $ordersToGet = [];
+        foreach($this->orderLists as $orderList){
+            if(!in_array($orderList['ordersn'],$cachedCompletedOrdersDetailOrderSn)){
+                $ordersToGet [] = $orderList['ordersn'];
+            }
+        }
+
+        $ordersDetail = $cachedCompletedOrdersDetail;
 
         $path = '/api/v1/orders/detail';
 
         $datas = [];
-        $ordersSnChunk = $orderLists->pluck('ordersn')->chunk(50)->toArray();
+        \Log::alert(count($ordersToGet));
+        $ordersSnChunk = collect($ordersToGet)->chunk(50)->toArray();
         foreach ($ordersSnChunk as $ordersSn) {
             $data = [
                 'ordersn_list' => collect($ordersSn)->values()->toArray(),
@@ -118,29 +134,34 @@ class ShopeeOrderModel extends Model
             $datas[] = $data;
         }
 
-
         $responseData = shopee_multiple_async_post($path, $datas);
-        // return response()->json();
+
         foreach ($responseData as $data) {
             foreach ($data['orders'] as $orderDetail) {
                 $ordersDetail[] = $orderDetail;
+                if($orderDetail['order_status'] == "COMPLETED"){
+                    $cachedCompletedOrdersDetail[] = $orderDetail; 
+                }
             }
         }
 
+        Cache::put($cacheName,$cachedCompletedOrdersDetail,now()->addYear());
 
-        // $ordersEscrowDetail = $this->getOrdersEscrowDetail();
+        $ordersEscrowDetail = $this->getOrdersEscrowDetail();
 
         $stocks = Stock::with('costs')->where('shop_id', auth()->user()->current_shop_id)->get();
         foreach ($ordersDetail as $key => $orderDetail) {
             $item_count = 0;
-            // foreach ($ordersEscrowDetail as $orderEscrowDetail) {
-            //     if ($orderDetail['ordersn'] === $orderEscrowDetail['ordersn']) {
-            //         $ordersDetail[$key]['_escrow_detail'] = $orderEscrowDetail;
-            //         break;
-            //     }
-            // }
+            $item_amount = 0;
+            foreach ($ordersEscrowDetail as $orderEscrowDetail) {
+                if ($orderDetail['ordersn'] === $orderEscrowDetail['ordersn']) {
+                    $ordersDetail[$key]['_escrow_detail'] = $orderEscrowDetail;
+                    break;
+                }
+            }
             foreach ($orderDetail['items'] as $key2 => $item) {
                 $item_count +=  $item['variation_quantity_purchased'];
+                $item_amount += $item['variation_quantity_purchased'] * $item['variation_discounted_price'];
                 foreach ($stocks as $stock) {
                     if ($item['item_id'] == $stock->platform_item_id && $item['variation_id'] == $stock->platform_variation_id) {
                         $cost = $stock->costs->where('from_date', '<=', gmdate("Y-m-d", $orderDetail['create_time']))->sortByDesc('from_date')->first();
@@ -153,6 +174,15 @@ class ShopeeOrderModel extends Model
                 }
             }
             $ordersDetail[$key]['_append']['item_count'] = $item_count;
+            $ordersDetail[$key]['_append']['item_amount'] = $item_amount;
+        }
+
+        foreach($ordersDetail as $key => $orderDetail){
+            if($orderDetail['_escrow_detail']['activity']){
+                foreach($orderDetail['_escrow_detail']['activity'] as $activity){
+                    $ordersDetail[$key]['_append']['item_amount'] += $activity['discounted_price'];
+                }
+            }
         }
 
 
@@ -160,29 +190,48 @@ class ShopeeOrderModel extends Model
     }
 
     public function getOrdersEscrowDetail()
-    {
+    {   
+        $cacheName = 'orders_escrow_detail_'.Auth::id();
 
-        $orderLists = $this->orderLists;
-        $path = '/api/v1/orders/my_income';
-        $datas = [];
-        foreach ($orderLists as $orderList) {
+        if(Cache::has($cacheName)){
+            $orders_escrow_detail = Cache::get($cacheName);
+        }else{
+            $orders_escrow_detail = [];
+        }
+        $orders_escrow_detail_ordersn = collect($orders_escrow_detail)->pluck('ordersn')->toArray();
 
-            $data = [
-                'ordersn' => $orderList['ordersn'],
-                'partner_id' => shopee_partner_id(),
-                'shopid' => shopee_shop_id(),
-                'timestamp' => $this->timestamp,
-            ];
-            $datas[] = $data;
+        $orders_escrow_detail_ordersn_to_get = [];
+        foreach($this->orderLists as $orderList){
+            if(!in_array($orderList['ordersn'],$orders_escrow_detail_ordersn)){
+                $orders_escrow_detail_ordersn_to_get [] = $orderList['ordersn'];
+            }
+        }
+        
+        
+        if(count($orders_escrow_detail_ordersn_to_get)){
+            $path = '/api/v1/orders/my_income';
+
+            $datas = [];
+            foreach ($orders_escrow_detail_ordersn_to_get as $ordersn) {
+                $data = [
+                    'ordersn' => $ordersn,
+                    'partner_id' => shopee_partner_id(),
+                    'shopid' => shopee_shop_id(),
+                    'timestamp' => $this->timestamp,
+                ];
+                $datas[] = $data;
+            }
+
+            $responseData = shopee_multiple_async_post($path, $datas);
+        
+            foreach ($responseData as $data) {
+                $orders_escrow_detail[] = $data['order'];
+            }
         }
 
-        $ordersEscrowDetail = [];
-        $responseData = shopee_multiple_async_post($path, $datas);
-        foreach ($responseData as $data) {
-            $ordersEscrowDetail[] = $data['order'];
-        }
+        Cache::put($cacheName,$orders_escrow_detail,now()->addYear());
 
-        return $ordersEscrowDetail;
+        return $orders_escrow_detail;
     }
 
     public function getOrdersIncomeDetail()

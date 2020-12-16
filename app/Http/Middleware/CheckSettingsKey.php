@@ -19,14 +19,14 @@ class CheckSettingsKey
         // \Auth::logout();
         // session()->flush();
         // return redirect('');
-        $settingsKey = array_keys(getShopSettingSession());
-        $allSettingsKey = ShopSetting::getSettingsKey();
+        // $settingsKey = array_keys(getShopSettingSession());
+        // $allSettingsKey = ShopSetting::getSettingsKey();
         
-        foreach($allSettingsKey as $key){
-            if(!in_array($key,$settingsKey)){
-                return redirect('/shop-settings-setup')->withErrors(['The system is missing settings. Try to reenter the settings again!']);
-            }
-        }
+        // foreach($allSettingsKey as $key){
+        //     if(!in_array($key,$settingsKey)){
+        //         return redirect('/shop-settings-setup')->withErrors(['The system is missing settings. Try to reenter the settings again!']);
+        //     }
+        // }
         return $next($request);
     }
 }

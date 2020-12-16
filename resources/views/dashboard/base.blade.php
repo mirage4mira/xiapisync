@@ -92,6 +92,9 @@
   <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-beta.1/dist/js/select2.min.js"></script>
 
   <script src="https://cdn.jsdelivr.net/npm/js-cookie@rc/dist/js.cookie.min.js"></script>
+
+  <script src="https://cdn.jsdelivr.net/lodash/4.17.3/lodash.min.js"></script>
+
 </head>
 
 

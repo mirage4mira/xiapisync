@@ -16,4 +16,8 @@ class InboundOrder extends Model
     public function stocks(){
         return $this->belongsToMany('App\Stock')->withPivot('quantity')->withPivot('cost')->withTimestamps();
     }
+
+    public function getDaysToArriveAttribute(){
+        return now()->diffInDays(\Carbon\Carbon::parse($this->payment_date)->addDays($this->days_to_supply),false);
+    }
 }

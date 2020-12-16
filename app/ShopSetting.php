@@ -9,10 +9,10 @@ class ShopSetting extends Model
     protected $fillable = ['shop_id','setting','value'];
     
     public static $settingsAndValidations = [
-        'default_cogs_percentage' => 'required|numeric|min:0|max:100',
-        'default_prep_cost' => 'required|numeric|min:0',
-        'default_days_to_supply' => 'required|integer|min:0',
-        'default_safety_stock' => 'required|integer|min:0',
+        // 'default_cogs_percentage' => 'required|numeric|min:0|max:100',
+        // 'default_prep_cost' => 'required|numeric|min:0',
+        // 'default_days_to_supply' => 'required|integer|min:0',
+        // 'default_safety_stock' => 'required|integer|min:0',
     ];
 
     public static function getSettingsKey(){

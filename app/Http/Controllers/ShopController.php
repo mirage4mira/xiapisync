@@ -14,14 +14,23 @@ class ShopController extends Controller
 
         $path = '/api/v1/shop/auth_partner';
 
-        $platform = 'SHOPEE';
+        $platforms = ['SHOPEE','LAZADA'];
         $platformAuthToken = generate_token();
         session()->put('platform_auth_token',$platformAuthToken);
-        $d = \Crypt::encrypt(serialize([$platformAuthToken,$platform]));
-        $redirectUrl = URL::to('/add-shop?'.http_build_query(['d'=>$d]));
-        $token = hash('sha256',shopee_partner_key().$redirectUrl);
-        $shopeeAuthLink = shopee_url().$path.'?'.http_build_query(['id' => shopee_partner_id() ,'token' => $token,'redirect'=>$redirectUrl]);
-        return view('sign-in-platform',compact('shopeeAuthLink'));
+
+        $redirectDatas = [];
+        foreach($platforms as $platform){
+            $redirectDatas[] = \Crypt::encrypt(serialize([$platformAuthToken,$platform]));
+        }
+        $redirectToBaseUrl = '/add-shop';
+        // dd($redirectDatas);
+        $shopeeRedirectUrl = URL::to($redirectToBaseUrl.'?'.http_build_query(['d'=>$redirectDatas[0]]));
+        $shopeeToken = hash('sha256',shopee_partner_key().$shopeeRedirectUrl);
+        $shopeeAuthLink = shopee_url().$path.'?'.http_build_query(['id' => shopee_partner_id() ,'token' => $shopeeToken,'redirect'=>$shopeeRedirectUrl]);
+
+        // dd(URL::to($redirectToBaseUrl.'?'.http_build_query(['d'=>$redirectDatas[1]])));
+        $lazadaAuthLink = 'https://auth.lazada.com/oauth/authorize'.'?'.http_build_query(['response_type' => 'code' ,'force_auth' => true,'redirect_uri'=> URL::to($redirectToBaseUrl.'?'.http_build_query(['d'=>$redirectDatas[1]])),'client_id' => env('LAZADA_APP_KEY')]);
+        return view('sign-in-platform',compact('shopeeAuthLink','lazadaAuthLink'));
     }
 
     public function addShop(Request $request){
@@ -53,7 +62,7 @@ class ShopController extends Controller
             setShopSettingSession();
         }
         
-        if(!$shop->settings()->count()) return redirect('/shop-settings-setup');
+        // if(!$shop->settings()->count()) return redirect('/shop-settings-setup');
         return redirect('/');
     }
 }
