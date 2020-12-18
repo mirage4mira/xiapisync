@@ -17,7 +17,7 @@ class ShopeeProductModel extends Model
     public function __construct()
     {
         $this->timestamp = time();
-        $this->cacheName = 'items_detail_'.Auth::id();
+        $this->cacheName = setShopUserCacheName('items_detail');
     }
 
     public function getItemsList()
@@ -109,7 +109,7 @@ class ShopeeProductModel extends Model
             updateLastSyncTimeCookie();
         }
         
-        $ordersDetailCacheName = 'orders_detail_for_items_detail_'.Auth::id();
+        $ordersDetailCacheName = setShopUserCacheName('orders_detail_for_items_detail');
         
         if(Cache::has($ordersDetailCacheName)){
             $orderDetails = Cache::get($ordersDetailCacheName);
@@ -314,6 +314,22 @@ class ShopeeProductModel extends Model
             
         }
     }
+
+    
+    public function getCategories(){
+        $path = '/api/v1/item/categories/get';
+        $data = [
+            'partner_id' => shopee_partner_id(),
+            'shopid' => shopee_shop_id(),
+            'timestamp' => $this->timestamp,
+        ];
+
+        $responseData = shopee_http_post($path, $data)->json();
+        
+        return $responseData['categories'];
+    }
+
+
 
     public function createInitialStockAndCost($products)
     {

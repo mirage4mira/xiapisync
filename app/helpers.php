@@ -125,12 +125,13 @@ function setShopsSession(){
     foreach($shops as $shop){
         $shopsSession [$shop->id] = $shop->getShopInfo();
     }
-    
+    // dd($shopsSession);
     Session::put('available_shops_info',$shopsSession);
 }
 
 if(!function_exists('getShopsSession')){
     function getShopsSession(){
+        // dd(Session::get('available_shops_info'));
         return Session::get('available_shops_info');
     }
 }
@@ -167,4 +168,32 @@ function deleteLastSyncTime(){
     Cookie::queue(
         Cookie::forget('last_sync_time')
     );
+}
+
+function getLazadaRestApiUrl($shop = null){
+    return str_replace('{COUNTRY}',getLazadaShopId($shop)['country'],env('LADAZA_API_BASE_URL'));
+}
+
+function getLazadaShopId($shop = null){
+    if(!$shop){
+        $shop = \App\Shop::find(Auth::user()->current_shop_id);
+    }
+
+    [$pShopId,$country] = explode('.',$shop->platform_shop_id);
+    return ['shop_id' => $pShopId, 'country' => $country];
+}
+
+function getLazadaToken($shop = null){
+    return $shop ? $shop->shop_token: Auth::user()->currentShop->shop_token;
+}
+
+function getLazadaAccessToken($shop = null){
+    return getLazadaToken($shop)->access_token;
+}
+
+function setShopUserCacheName($string){
+    if(!Auth::user()->current_shop_id){
+        throw new Exception('No current_shop_id');
+    }
+    return $string.'_'.Auth::id().'_'.Auth::user()->current_shop_id;
 }

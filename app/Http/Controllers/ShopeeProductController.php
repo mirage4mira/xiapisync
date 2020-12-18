@@ -6,7 +6,10 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\ShopeeProductModel;
 use App\Stock;
+use App\Shop;
 use Auth;
+use Paulwscom\Lazada\LazopClient;
+use Paulwscom\Lazada\LazopRequest;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Validator;
 use Maatwebsite\Excel\Facades\Excel;
@@ -16,6 +19,7 @@ use App\StockCost;
 use Symfony\Contracts\Service\Attribute\Required;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\View;
 
 class ShopeeProductController extends Controller
 {
@@ -147,5 +151,76 @@ class ShopeeProductController extends Controller
         $excel = Excel::download( new InventoryTemplateExport($rows),'update-inventory-template.xlsx');
  
         return $excel;
+    }
+
+    function syncItemsWithLazada(){
+        $lazadaShops = collect(getShopsSession())->where('platform','LAZADA')->toArray();
+        return view('sync-items.index',compact('lazadaShops'));
+    }
+
+    function createLazadaItems(Request $request){
+        $lazadaShop = Shop::find($request->shop_id);
+        $c = new LazopClient(getLazadaRestApiUrl($lazadaShop),env('LAZADA_APP_KEY'), env('LAZADA_APP_SECRET'));
+        $request = new LazopRequest('/category/tree/get','GET');
+        $categories = json_decode($c->execute($request, getLazadaAccessToken($lazadaShop)),true)['data'];
+
+        $shopeeProductModel = new ShopeeProductModel; 
+        $shopeeItemsChunk = collect($shopeeProductModel->getDetailedItemsDetail())->chunk(10)->toArray();
+        // foreach($shopeeItems as $key => $item){
+        //     foreach($shopeeCategories as $category){
+        //         // dump($item['category_id'],$category['category_id']);
+        //         if($item['category_id'] == $category['category_id']){
+        //             $shopeeItems[$key]['_append']['category_name'] = $category['category_name']; 
+        //             break;
+        //         }
+        //     }
+        // }
+        $shop_id = $lazadaShop->id;
+        return view('sync-items.create',compact('categories','shopeeItemsChunk','shop_id'));
+    }
+
+    function exportItemsToLazada(Request $request){
+        dd($request);
+    }
+
+    function getCategoryAttribute(Request $request){
+        $lazadaShop = Shop::find($request->shop_id);
+
+        $c = new LazopClient(getLazadaRestApiUrl($lazadaShop),env('LAZADA_APP_KEY'), env('LAZADA_APP_SECRET'));
+        $_request = new LazopRequest('/category/attributes/get','GET');
+        $_request->addApiParam('primary_category_id',$request->category_id);
+        $categoryAttr = json_decode($c->execute($_request, getLazadaAccessToken($lazadaShop)),true)['data'];
+        
+        $_request = new LazopRequest('/category/attributes/get','GET');
+        $_request->addApiParam('primary_category_id',$request->category_id);
+        $categoryAttr = json_decode($c->execute($_request, getLazadaAccessToken($lazadaShop)),true)['data'];
+ 
+
+        $shopeeProductModel = new ShopeeProductModel;
+        $shopeeItems = $shopeeProductModel->getDetailedItemsDetail();
+        
+        $shopeeItem = null;
+        if($request->variation_id){
+            foreach($shopeeItems as $item){
+                foreach($item['variations'] as $variation){
+                    if($variation['variation_id'] == $request->variation_id){
+                        $shopeeItem = $item;
+                        $shopeeItem['_variation'] = $variation;
+                    }
+                }
+            }
+        }
+        else{
+            foreach($shopeeItems as $item){
+                if($item['item_id'] == $request->item_id){
+                    $shopeeItem = $item;
+                    break;
+                }
+            }
+        }
+        // return response()->json($categoryAttr);
+        $inputArrayNumber = $request->i;
+        return View::make('sync-items.components.item-attribute-input',compact('shopeeItem','categoryAttr','inputArrayNumber'))->render();
+        // return View::make('sync-items.components.item-attribute-input',compact('shopeeItem','categoryAttr'))->render();
     }
 }

@@ -24,7 +24,7 @@ class ShopeeOrderController extends Controller
         $start_date = new Carbon($request->start_date);
         $end_date = new Carbon($request->end_date);
         
-        $cacheName = 'orders_detail_'.Auth::id();
+        $cacheName = setShopUserCacheName('orders_detail');
         $hasCache = Cache::has($cacheName);
         
         if($hasCache)$cache = Cache::get($cacheName);

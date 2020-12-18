@@ -102,7 +102,7 @@ class ShopeeOrderModel extends Model
 
     public function getOrdersDetail()
     {
-        $cacheName = 'completed_orders_detail_'.Auth::id();
+        $cacheName = setShopUserCacheName('completed_orders_detail');
 
         if(Cache::has($cacheName)){
             $cachedCompletedOrdersDetail = Cache::get($cacheName);
@@ -122,7 +122,7 @@ class ShopeeOrderModel extends Model
         $path = '/api/v1/orders/detail';
 
         $datas = [];
-        \Log::alert(count($ordersToGet));
+
         $ordersSnChunk = collect($ordersToGet)->chunk(50)->toArray();
         foreach ($ordersSnChunk as $ordersSn) {
             $data = [
@@ -149,6 +149,12 @@ class ShopeeOrderModel extends Model
 
         $ordersEscrowDetail = $this->getOrdersEscrowDetail();
 
+        $ordersListOrderSn = $this->orderLists->pluck('ordersn')->toArray();
+        $ordersDetail = collect($ordersDetail)->filter(function($orderDetail) use ($ordersListOrderSn){
+            // \Log::alert($orderDetail);
+            return in_array($orderDetail['ordersn'],$ordersListOrderSn);
+        })->values()->toArray();
+        // \Log::alert($ordersDetail);
         $stocks = Stock::with('costs')->where('shop_id', auth()->user()->current_shop_id)->get();
         foreach ($ordersDetail as $key => $orderDetail) {
             $item_count = 0;
@@ -191,7 +197,7 @@ class ShopeeOrderModel extends Model
 
     public function getOrdersEscrowDetail()
     {   
-        $cacheName = 'orders_escrow_detail_'.Auth::id();
+        $cacheName = setShopUserCacheName('orders_escrow_detail');;
 
         if(Cache::has($cacheName)){
             $orders_escrow_detail = Cache::get($cacheName);
@@ -201,12 +207,13 @@ class ShopeeOrderModel extends Model
         $orders_escrow_detail_ordersn = collect($orders_escrow_detail)->pluck('ordersn')->toArray();
 
         $orders_escrow_detail_ordersn_to_get = [];
+
+
         foreach($this->orderLists as $orderList){
             if(!in_array($orderList['ordersn'],$orders_escrow_detail_ordersn)){
                 $orders_escrow_detail_ordersn_to_get [] = $orderList['ordersn'];
             }
         }
-        
         
         if(count($orders_escrow_detail_ordersn_to_get)){
             $path = '/api/v1/orders/my_income';

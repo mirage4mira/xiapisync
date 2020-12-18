@@ -49,4 +49,8 @@ class User extends Authenticatable
     {
         return $this->belongsToMany('App\Shop');
     }
+
+    public function currentShop(){
+        return $this->belongsTo('App\Shop','current_shop_id');
+    }
 }

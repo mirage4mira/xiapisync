@@ -16,7 +16,7 @@ class CheckGotShop
      */
     public function handle($request, Closure $next)
     {   
-
+        // dd(Auth::user()->current_shop_id);
         if(!Auth::user()->current_shop_id){
             if(Auth::user()->shops()->count()){
             setShopsSession();
@@ -27,8 +27,10 @@ class CheckGotShop
                 return redirect('/sign-in-platform');
             }
         }else{
-            if(!getShopsSession())setShopsSession();
+            // return redirect('/sign-in-platform');
+            if(!getShopsSession() || (count(getShopsSession()) !=  Auth::user()->shops()->count()))setShopsSession();
             if(!getShopSettingSession())setShopSettingSession();
+            // dd(getShopsSession());
 
         }
 
