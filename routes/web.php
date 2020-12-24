@@ -74,9 +74,13 @@ Auth::routes();
             Route::post('/shop-settings-setup', 'ShopSettingController@create' );
 
             Route::group(['middleware' => ['check.settings.key']],function(){
+                Route::get('/add-items-to-lazada', 'ShopeeProductController@addItemsToLazada');
+                
+                Route::post('/sync-items-with-lazada/map-by-sku', 'ShopeeProductController@syncItemsWithLazadaMapBySku');
                 Route::get('/sync-items-with-lazada', 'ShopeeProductController@syncItemsWithLazada');
+                Route::post('/sync-items-with-lazada', 'ShopeeProductController@saveSyncItemsWithLazada');
                 Route::post('/export-items-to-lazada', 'ShopeeProductController@exportItemsToLazada');
-                Route::get('/sync-items-with-lazada/create', 'ShopeeProductController@createLazadaItems');
+                Route::get('/add-items-to-lazada/create', 'ShopeeProductController@createLazadaItems');
                 Route::get('/change-shop', 'ShopController@changeShop');
                 Route::post('/get-orders-esrow-detail', 'ShopeeOrderController@getOrdersEsrowDetail');
                 Route::post('/get-products-detail', 'ShopeeProductController@getProductsDetail');

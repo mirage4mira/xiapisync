@@ -18,6 +18,9 @@ function HandleArray(&$value)
 
   if (isset($value['children']) && is_array($value['children'])) {
     //Do something with all array
+    if($value['name'] == "Packaging & Cartons"){
+      Log::alert($value);
+    }
     echo "<optgroup label='" . $value['name'] . "'>";
     array_walk($value['children'], 'HandleArray');
     echo "</optgroup>";
@@ -27,7 +30,7 @@ function HandleArray(&$value)
   }
 }
 ?>
-<select class="form-control category-select d-none" id="cat-select-template" onchange="setCategoryInput(this)">
+<select class="form-control category-select d-none" style="width: 100%;" id="cat-select-template" onchange="setCategoryInput(this)">
   <?php
   array_walk($categories, 'HandleArray');
   ?>
@@ -44,6 +47,7 @@ function HandleArray(&$value)
             <div class="card-body">
             <form action="/export-items-to-lazada" id="items-form" method="post">
                 @csrf
+                <input type="hidden" name="shop_id" value="{{$shop_id}}">
                 @foreach($shopeeItemsChunk as $key => $shopeeItems)
                 <div id="items-tab-{{$key}}" class="d-none">
                   @foreach($shopeeItems as $item)
@@ -55,12 +59,7 @@ function HandleArray(&$value)
                       if ($sku) $sku = '[' . $sku . ']' ?>
                       <p>{{$item['name']}}<br><small>{{$variation['name']}} {{$sku}}</small></p>
                     </div>
-                    <div class="row">
-                      <div class="col-6 item-select-div">
-                      </div>
-                    </div>
-                    <div class="row item-attr-div m-2">
-                    </div>
+                    @include('sync-items.includes.item-attribute-input')
                   </div>
                   @endforeach
                   @else
@@ -70,23 +69,15 @@ function HandleArray(&$value)
                       if ($sku) $sku = '[' . $sku . ']' ?>
                       <p>{{$item['name']}}<br><small>{{$sku}}</small></p>
                     </div>
-                    <div class="row">
-                      <div class="col-6 item-select-div">
-
-                      </div>
-                    </div>
-                    <div class="row">
-                      <div class="col-12 item-attr-div">
-
-                      </div>
-                    </div>
+                    @include('sync-items.includes.item-attribute-input')
                   </div>
                   @endif
                   <hr>
                   @endforeach
                 </div>
                 @endforeach
-                <input type="submit" class="btn btn-primary" value="Save">
+
+                  <input type="submit" class="btn btn-primary" value="Save">
               </form>
               <nav aria-label="Page navigation example" style="margin-top:3rem;">
                 <ul class="pagination">
@@ -121,8 +112,8 @@ function HandleArray(&$value)
     $(function() {
       $('.item-select-div').each(function(idx, obj) {
         var clone = $('#cat-select-template').clone().attr('id', null).removeClass('d-none');
-        $(obj).append(clone);
-        // clone.select2();
+        $(obj).prepend(clone);
+        clone.select2();
       });
       switchPane(0);
       // $('.category-select').select2();
@@ -169,6 +160,10 @@ function HandleArray(&$value)
 
     var i = 0;
     function setCategoryInput(obj) {
+      $(obj).attr('disabled',true);
+
+      $(obj).siblings(".select-loading-div").html("loading...");
+
       return $.ajax({
         async: true,
         type: 'GET',
@@ -183,9 +178,16 @@ function HandleArray(&$value)
         },
         success: function(data) {
           $(obj).closest('.item-row').find('.item-attr-div').html(data);
+          $(obj).closest('.item-row').find('.is-brand').select2({
+            minimumInputLength: 2,
+          });
         },
-        error: ajaxErrorResponse
+        error: ajaxErrorResponse,
+        complete:function(){
+          $(obj).attr('disabled',false);
+          $(obj).siblings(".select-loading-div").html("")
+        }
       });
     }
-  </script>
+    </script>
   @endsection

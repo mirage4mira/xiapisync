@@ -32,7 +32,7 @@ class ShopeeOrderController extends Controller
         if(checkLastSyncTime() == true && isset($cache) && $cache['start_date'] == $start_date->format('Ymd') && $cache['end_date'] == $end_date->format('Ymd')){
             $orderDetails = $cache['orders'];  
         }else{
-            $orderDetails = (new ShopeeOrderModel($request->status,$start_date,$end_date))->getOrdersList()->getOrdersDetail();
+            $orderDetails = (new ShopeeOrderModel($start_date,$end_date))->getOrdersList($request->status)->getOrdersDetail();
             Cache::put($cacheName, ['start_date' => $start_date->format('Ymd'), 'end_date' => $end_date->format('Ymd'), 'orders' => $orderDetails], env('CACHE_DURATION'));
             updateLastSyncTimeCookie();
         }

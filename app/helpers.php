@@ -1,5 +1,6 @@
 <?php
 
+use Carbon\Traits\Timestamp;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
 if (! function_exists('get_platforms')) {
@@ -26,7 +27,7 @@ if (! function_exists('shopee_http_post')) {
     }
 }
 
-function shopee_multiple_async_post(string $path, array $datas){
+function shopee_multiple_async_post(string $path, array $datas,$shop = null){
 
     $partnerKey = shopee_partner_key();
     $url = shopee_url($path);
@@ -43,6 +44,66 @@ function shopee_multiple_async_post(string $path, array $datas){
 
         // $results = GuzzleHttp\Promise\unwrap($promises);
         $results = GuzzleHttp\Promise\settle($promises)->wait();
+        $contents = [];
+        foreach($results as $result){
+        if(isset($result['value'])){
+            $content = json_decode($result['value']->getBody()->getContents(),true);
+
+            if(isset($content['error'])){
+                \Log::error($content['error']);
+                \Log::error($content['msg']);
+            }else{
+                $contents[] = $content;
+            }
+        }
+        
+    }
+
+    return $contents;
+}
+
+function lazada_multiple_async_request(string $path, array $datas, $type,$shop = null){
+
+    $appSecret = env('LAZADA_APP_SECRET');
+    
+    
+    $promises = [];
+    $client = new GuzzleHttp\Client();
+    foreach($datas as $key => $d){
+        $d['app_key'] = env('LAZADA_APP_KEY');
+        $d['sign_method'] = "sha256";
+        $d['timestamp'] = now()->timestamp * 1000;
+        // dd($d['timestamp']);
+        
+        if($shop){
+            $d['access_token'] = getLazadaAccessToken($shop);
+            $url = getLazadaRestApiUrl($shop).$path;
+        }else{
+            $d['access_token'] = getLazadaAccessToken();
+            $url = getLazadaRestApiUrl().$path;
+        }
+
+        // $d['partner_id'] = 'lazop-sdk-php-20180422';
+        $sign = (new Paulwscom\Lazada\LazopClient(' '))->generateSign($path,$d,$appSecret);
+        
+        $d['sign'] = $sign;
+        // unset($d['limit']);
+        // unset($d['offset']);
+        $headers = ['Authorization'=> $sign,'Content-Type' => 'application/json'];
+        // dd($d);
+        // $requestData = ['json' => $d,'timeout' => 60,'connect_timeout' => 60];
+        $requestData = ['headers' => $headers,'json' => $d,'timeout' => 60,'connect_timeout' => 60];
+
+        if($type == "POST"){
+            $promises[] = $client->postAsync($url,$requestData);
+        }
+        elseif($type == "GET"){
+            $promises[] = $client->getAsync($url.'?'.http_build_query($d));
+        }
+    } 
+
+        // $results = GuzzleHttp\Promise\unwrap($promises);
+    $results = GuzzleHttp\Promise\settle($promises)->wait();
 
     $contents = [];
     foreach($results as $result){
@@ -102,8 +163,13 @@ if(!function_exists('shopee_partner_key')){
 }
 
 if(!function_exists('shopee_shop_id')){
-    function shopee_shop_id(){
-        $currentShopId = Auth::user()->current_shop_id;
+    function shopee_shop_id($shop = null){
+        if($shop){
+            $currentShopId = $shop->id;
+            return intval($shop->platform_shop_id);
+        }else{
+            $currentShopId = Auth::user()->current_shop_id;
+        }
         if($currentShopId && getShopsSession()[$currentShopId]['platform'] === 'SHOPEE'){
             return intval(getShopsSession()[$currentShopId]['platform_shop_id']);
         }else{
@@ -191,9 +257,15 @@ function getLazadaAccessToken($shop = null){
     return getLazadaToken($shop)->access_token;
 }
 
-function setShopUserCacheName($string){
-    if(!Auth::user()->current_shop_id){
-        throw new Exception('No current_shop_id');
+function setShopUserCacheName($string,$shop = null){
+    if($shop){
+        $current_shop_id = $shop->id;
     }
-    return $string.'_'.Auth::id().'_'.Auth::user()->current_shop_id;
+    elseif(!Auth::user()->current_shop_id){
+        throw new Exception('No current_shop_id');
+    }else{
+        $current_shop_id = Auth::user()->current_shop_id;
+    }
+
+    return $string.'_'.Auth::id().'_'.$current_shop_id;
 }

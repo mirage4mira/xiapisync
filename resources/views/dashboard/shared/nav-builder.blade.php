@@ -25,6 +25,9 @@
 
         <li class="c-sidebar-nav-dropdown"><a class="c-sidebar-nav-dropdown-toggle"><i class="cil-clipboard c-sidebar-nav-icon"></i>Tools</a>
             <ul class="c-sidebar-nav-dropdown-items">
+                <li class="c-sidebar-nav-item"><a class="c-sidebar-nav-link" href="/add-items-to-lazada"><span class="c-sidebar-nav-icon"></span>add items to Lazada</a></li>
+            </ul>
+            <ul class="c-sidebar-nav-dropdown-items">
                 <li class="c-sidebar-nav-item"><a class="c-sidebar-nav-link" href="/sync-items-with-lazada"><span class="c-sidebar-nav-icon"></span>Sync items with Lazada</a></li>
             </ul>
         </li>

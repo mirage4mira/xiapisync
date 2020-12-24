@@ -13,11 +13,13 @@ class ShopeeProductModel extends Model
     public $timestamp;
     public $cacheName;
     public $itemsList = [];
+    public $shop;
 
-    public function __construct()
+    public function __construct($shop = null)
     {
+        $this->shop = $shop;
         $this->timestamp = time();
-        $this->cacheName = setShopUserCacheName('items_detail');
+        $this->cacheName = setShopUserCacheName('items_detail',$shop);
     }
 
     public function getItemsList()
@@ -34,7 +36,7 @@ class ShopeeProductModel extends Model
                 'pagination_offset' => $i,
                 'pagination_entries_per_page' => $paginate,
                 'partner_id' => shopee_partner_id(),
-                'shopid' => shopee_shop_id(),
+                'shopid' => shopee_shop_id($this->shop),
                 'timestamp' => $this->timestamp,
             ];
 
@@ -66,7 +68,7 @@ class ShopeeProductModel extends Model
             $data = [
                 'item_id' => intval($item_id),
                 'partner_id' => shopee_partner_id(),
-                'shopid' => shopee_shop_id(),
+                'shopid' => shopee_shop_id($this->shop),
                 'timestamp' => $this->timestamp,
             ];
             $datas[] = $data;
@@ -114,11 +116,11 @@ class ShopeeProductModel extends Model
         if(Cache::has($ordersDetailCacheName)){
             $orderDetails = Cache::get($ordersDetailCacheName);
         }else{
-            $orderDetails = (new ShopeeOrderModel("PAID",$start_date,now()))->getOrdersList()->getOrdersDetail();
+            $orderDetails = (new ShopeeOrderModel($start_date,now()))->getOrdersList("PAID")->getOrdersDetail();
             Cache::put($ordersDetailCacheName,$orderDetails,now()->endOfDay());
         }
 
-        $stocks = Stock::with(['costs', 'inbound_orders'])->where('shop_id', Auth::user()->current_shop_id)->get();
+        $stocks = Stock::with(['costs', 'inbound_orders','stock_syncs'])->where('shop_id', Auth::user()->current_shop_id)->get();
 
         foreach ($products as $key1 => $product) {
             if (!empty($product['variations'])) {
@@ -134,6 +136,7 @@ class ShopeeProductModel extends Model
                             $products[$key1]['variations'][$key2]['_append']['inbound'] = $stock->inbound_orders->where('stock_received',0)->values()->toArray();
                             $products[$key1]['variations'][$key2]['_append']['safety_stock'] = $stock->safety_stock;
                             $products[$key1]['variations'][$key2]['_append']['days_to_supply'] = $stock->days_to_supply;
+                            $products[$key1]['variations'][$key2]['_append']['stock_syncs'] = $stock->stock_syncs;
 
                             $totalQtySold = 0;
                             $totalSales = 0;
@@ -190,6 +193,7 @@ class ShopeeProductModel extends Model
                         $products[$key1]['_append']['inbound'] = $stock->inbound_orders->where('stock_received',0)->values()->toArray();
                         $products[$key1]['_append']['safety_stock'] = $stock->safety_stock;
                         $products[$key1]['_append']['days_to_supply'] = $stock->days_to_supply;
+                        $products[$key1]['_append']['stock_syncs'] = $stock->stock_syncs;
                         $products[$key1]['_append']['avg_monthly_quantity'] = 0;
                         $products[$key1]['_append']['avg_monthly_sales'] = 0;
                         $products[$key1]['_append']['avg_monthly_profit'] = 0;
@@ -252,11 +256,11 @@ class ShopeeProductModel extends Model
             'item_id' => $stockData['product_id'],
             'stock' => intval($stockData['stock_quantity']),
             'partner_id' => shopee_partner_id(),
-            'shopid' => shopee_shop_id(),
+            'shopid' => shopee_shop_id($this->shop),
             'timestamp' => $this->timestamp,
         ];
 
-        if (isset($stockData['variation_id'])) {
+        if (isset($stockData['variation_id']) && $stockData['variation_id']) {
             $data['variation_id'] = $stockData['variation_id'];
             $responseData = shopee_http_post($updateVariationStockPath, $data)->json();
         } else {
@@ -276,7 +280,7 @@ class ShopeeProductModel extends Model
             'item_id' => $priceData['product_id'],
             'price' => ((float)$priceData['price']),
             'partner_id' => shopee_partner_id(),
-            'shopid' => shopee_shop_id(),
+            'shopid' => shopee_shop_id($this->shop),
             'timestamp' => $this->timestamp,
         ];
 
@@ -320,7 +324,7 @@ class ShopeeProductModel extends Model
         $path = '/api/v1/item/categories/get';
         $data = [
             'partner_id' => shopee_partner_id(),
-            'shopid' => shopee_shop_id(),
+            'shopid' => shopee_shop_id($this->shop),
             'timestamp' => $this->timestamp,
         ];
 
@@ -335,7 +339,7 @@ class ShopeeProductModel extends Model
     {
         $settings =  getShopSettingSession();
         $default_cogs_percentage = 0;
-        $stocks = Stock::select('id', 'platform_item_id', 'platform_variation_id')->where('shop_id', Auth::user()->current_shop_id)->get();
+        $stocks = Stock::select('id', 'platform_item_id', 'platform_variation_id')->where('shop_id', Auth::user()? Auth::user()->current_shop_id : $this->shop->id)->get();
         foreach ($products as $product) {
             if (!empty($product['variations'])) {
                 foreach ($product['variations'] as $variation) {

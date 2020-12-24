@@ -19,6 +19,10 @@ class Stock extends Model
         return $this->hasMany('App\StockCost');
     }
 
+    public function stock_syncs(){
+        return $this->hasMany('App\StockSync');
+    }
+
     public function inbound_orders(){
         return $this->belongsToMany('App\InboundOrder')->withPivot('quantity');
     }

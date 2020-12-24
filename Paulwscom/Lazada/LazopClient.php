@@ -39,8 +39,9 @@ class LazopClient
 		$this->logLevel = Constants::$log_level_error;
 	}
 
-	protected function generateSign($apiName,$params)
+	public function generateSign($apiName,$params,$secretKey = null)
 	{
+		
 		ksort($params);
 
 		$stringToBeSigned = '';
@@ -51,7 +52,7 @@ class LazopClient
 		}
 		unset($k, $v);
 
-		return strtoupper($this->hmac_sha256($stringToBeSigned,$this->secretKey));
+		return strtoupper($this->hmac_sha256($stringToBeSigned,$secretKey? $secretKey :$this->secretKey));
 	}
 
 
