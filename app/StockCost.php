@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class StockCost extends Model
 {
-    protected $fillable = ['stock_id','from_date','cost'];
+    protected $guarded = [];
     
     protected $casts = [
         'cost' => 'float',

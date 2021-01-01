@@ -28,6 +28,8 @@ class UsersSeeder extends Seeder
             'email_verified_at' => now(),
             'password' => bcrypt(123), // password
             'remember_token' => Str::random(10),
+            'on_trial' => 1,
+            'plan_expiry_date' => now()->addDays(365),
         ]);
     }
 }

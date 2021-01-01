@@ -1,6 +1,6 @@
     <div class="c-sidebar-brand">
-        <!-- <img class="c-sidebar-brand-full" src="http://localhost:8000/assets/brand/my-brand.svg" width="118" height="46"> -->
-        <!-- <img class="c-sidebar-brand-minimized" src="assets/brand/coreui-signet-white.svg" width="118" height="46" alt="CoreUI Logo"> -->
+        <img class="c-sidebar-brand-full" src="/assets/brand/brand-inline.png">
+        <img class="c-sidebar-brand-minimized" src="/assets/brand/brand-icon.png" style="padding:5px">
     </div>
     <ul class="c-sidebar-nav">
         <li class="c-sidebar-nav-item">
@@ -24,16 +24,38 @@
 
 
         <li class="c-sidebar-nav-dropdown"><a class="c-sidebar-nav-dropdown-toggle"><i class="cil-clipboard c-sidebar-nav-icon"></i>Tools</a>
+            @if(auth()->user()->currentShop->platform == "SHOPEE")
             <ul class="c-sidebar-nav-dropdown-items">
-                <li class="c-sidebar-nav-item"><a class="c-sidebar-nav-link" href="/add-items-to-lazada"><span class="c-sidebar-nav-icon"></span>add items to Lazada</a></li>
+                <li class="c-sidebar-nav-item"><a class="c-sidebar-nav-link" href="/sync-items/add"><span class="c-sidebar-nav-icon"></span>Add Items to Lazada</a></li>
             </ul>
+            @endif
             <ul class="c-sidebar-nav-dropdown-items">
-                <li class="c-sidebar-nav-item"><a class="c-sidebar-nav-link" href="/sync-items-with-lazada"><span class="c-sidebar-nav-icon"></span>Sync items with Lazada</a></li>
+                <li class="c-sidebar-nav-item"><a class="c-sidebar-nav-link" href="/sync-items"><span class="c-sidebar-nav-icon"></span>Sync Stock with 
+                    @if(auth()->user()->currentShop->platform == "SHOPEE")
+                    Lazada
+                    @elseif(auth()->user()->currentShop->platform == "LAZADA")
+                    Shopee
+                    @endif
+                </a></li>
             </ul>
         </li>
         <li class="c-sidebar-nav-dropdown"><a class="c-sidebar-nav-dropdown-toggle"><i class="cil-settings c-sidebar-nav-icon"></i>Settings</a>
             <ul class="c-sidebar-nav-dropdown-items">
-                <li class="c-sidebar-nav-item"><a class="c-sidebar-nav-link" href="#"><span class="c-sidebar-nav-icon"></span>Add more shops</a></li>
+                <li class="c-sidebar-nav-item"><a class="c-sidebar-nav-link" href="/user/edit"><span class="c-sidebar-nav-icon"></span>User Settings</a></li>
+            </ul>
+            <ul class="c-sidebar-nav-dropdown-items">
+                <li class="c-sidebar-nav-item"><a class="c-sidebar-nav-link" href="/shop/sign-in"><span class="c-sidebar-nav-icon"></span>Add More Shops</a></li>
+            </ul>
+        </li>
+        <li class="c-sidebar-nav-dropdown"><a class="c-sidebar-nav-dropdown-toggle"><i class="cil-settings c-sidebar-nav-icon"></i>Help</a>
+            <ul class="c-sidebar-nav-dropdown-items">
+                <li class="c-sidebar-nav-item"><a class="c-sidebar-nav-link" href="https://documentation.xiapisync.com"><span class="c-sidebar-nav-icon"></span>Documentation</a></li>
+            </ul>
+            <ul class="c-sidebar-nav-dropdown-items">
+                <li class="c-sidebar-nav-item"><a class="c-sidebar-nav-link" href="/feedback"><span class="c-sidebar-nav-icon"></span>Leave a Feedback</a></li>
+            </ul>
+            <ul class="c-sidebar-nav-dropdown-items">
+                <li class="c-sidebar-nav-item"><a class="c-sidebar-nav-link" href="/about"><span class="c-sidebar-nav-icon"></span>About</a></li>
             </ul>
         </li>
     </ul>

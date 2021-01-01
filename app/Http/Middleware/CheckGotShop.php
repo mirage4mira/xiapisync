@@ -24,7 +24,7 @@ class CheckGotShop
             Auth::user()->save();
             setShopSettingSession();
             }else{
-                return redirect('/sign-in-platform');
+                return redirect('/shop/sign-in');
             }
         }else{
             // return redirect('/sign-in-platform');

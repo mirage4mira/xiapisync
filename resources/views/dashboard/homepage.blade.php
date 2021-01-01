@@ -9,23 +9,19 @@
       <div class="card">
         <div class="card-body">
           <div class="row">
-            <div class="col-lg-1">
+            <div class="col-md-2 col-sm-12">
               <h4 class="card-title mb-0">Sales</h4>
             </div>
-            <div class="col-4">
-              <!-- <input type="text" name="product" list="products-selection" id="product" class="form-control" placeholder="Search By Products" onchange="salesGraph.reloadGraphData(this);this.blur();" onfocus="this.value=''" />
-              <datalist id="products-selection">
-                <option></option>
-              </datalist> -->
-              <select type="text" name="product" id="products-selection" class="form-control" placeholder="Search By Products" onchange="salesGraph.reloadGraphData(this);this.blur();" onfocus="this.value=''">
+            <div class="col-md-4 col-sm-12">
+              <select type="text" name="product" id="products-selection" class="form-control w-100" placeholder="Search By Products" onchange="salesGraph.reloadGraphData(this);this.blur();" onfocus="this.value=''">
                 <option>-- All --</option>
               </select>              
             </div>
-            <div class="col-3 d-flex flex-row">
+            <div class="col-md-2 col-sm-6 d-flex flex-row">
               <input id="date1" onchange="salesGraph.reloadGraphData(this);" class="form-control" placeholder="Date Range">
               <input id="date2" style="visibility:hidden;width:0;">
             </div>
-            <div class="col-sm-4 d-none d-md-block">
+            <div class="col-md-4 col-sm-6 d-md-block">
               </button>
               <div class="btn-group btn-group-toggle float-right mr-2 date-selection-btn-group" data-toggle="buttons">
                 <label class="btn btn-outline-secondary  active">
@@ -53,7 +49,7 @@
 
             </div>
             <div class="col-sm-12 col-md mb-sm-2 mb-0">
-              <div class="text-muted">Esrow Amount</div><strong id="escrow"></strong>
+              <div class="text-muted">Payout Amount</div><strong id="escrow"></strong>
             </div>
             <div class="col-sm-12 col-md mb-sm-2 mb-0">
               <div class="text-muted">Profit</div><strong id="profit"></strong>
@@ -84,7 +80,7 @@
                     <th class="text-center">Date</th>
                     <th class="text-center">Orders</th>
                     <th class="text-center">Sales</th>
-                    <th class="text-center">Esrow Amount</th>
+                    <th class="text-center">Payout Amount</th>
                     <!-- <th class="text-center">Cost</th> -->
                     <th class="text-center">Profit</th>
                   </tr>
@@ -140,6 +136,7 @@
 <script src="{{ asset('js/coreui-chartjs.bundle.js') }}"></script>
 <script src="{{ asset('js/main.js') }}"></script>
 <script>
+  @if(auth()->user()->currentShop->platform == "SHOPEE")
   var start_date = Date.today().addMonths(-3).toString(AJAX_DATE_FORMAT);
   var end_date = Date.today().toString(AJAX_DATE_FORMAT);
   var ordersEsrowData;
@@ -615,5 +612,398 @@
   }
 
   var inventoryAlert = new InventoryAlert;
+
+  @elseif(auth()->user()->currentShop->platform == "LAZADA")
+
+  var start_date = Date.today().addMonths(-3).toString(AJAX_DATE_FORMAT);
+  var end_date = Date.today().toString(AJAX_DATE_FORMAT);
+  var ordersEsrowData;
+  var productsData;
+  var status = null;
+  $(function() {
+
+    $('#products-selection').select2();
+
+    getOrdersEscrowData(status, start_date, end_date).then(function(data) {
+      ordersEsrowData = data;
+      salesGraph.ordersEsrowData = ordersEsrowData;
+      salesGraph.timeToDisplaySalesGraph();
+      inventoryAlert.timeToDisplayInventoryAlert();
+      pIndicator.timeToDisplayPIndicatorTable();
+    });
+
+    getProductsData().then(function(data) {
+
+      productsData = data;
+      salesGraph.setProductsSelection(data);
+      salesGraph.timeToDisplaySalesGraph();
+      inventoryAlert.timeToDisplayInventoryAlert();
+      pIndicator.timeToDisplayPIndicatorTable();
+    });
+
+    initDoubleDatepicker('#date1', '#date2');
+  });
+
+  class PIndicator {
+    display_p_indicator = 0;
+
+    timeToDisplayPIndicatorTable() {
+      this.display_p_indicator += 1;
+      if (this.display_p_indicator == 2) {
+        this.loadPIndicatorTable();
+      }
+    }
+
+    loadPIndicatorTable() {
+      $('.p-indicator.loading-modal').removeClass("loading");
+
+      var dateRanges = [];
+      dateRanges.push({
+        name: 'Today',
+        start_date: Date.today().clearTime(),
+        end_date: Date.today().addDays(1).clearTime().addMilliseconds(-1)
+      });
+      dateRanges.push({
+        name: 'Yesterday',
+        start_date: Date.parse('yesterday').clearTime(),
+        end_date: Date.parse('yesterday').addDays(1).clearTime().addMilliseconds(-1)
+      });
+      dateRanges.push({
+        name: '7 Days',
+        start_date: Date.today().addDays(-7).clearTime(),
+        end_date: Date.today().addDays(1).clearTime().addMilliseconds(-1)
+      });
+      dateRanges.push({
+        name: '30 Days',
+        start_date: Date.today().addDays(-30).clearTime(),
+        end_date: Date.today().addDays(1).clearTime().addMilliseconds(-1)
+      });
+      dateRanges.push({
+        name: 'This Month',
+        start_date: Date.today().moveToFirstDayOfMonth().clearTime(),
+        end_date: Date.today().addDays(1).clearTime().addMilliseconds(-1)
+      });
+      dateRanges.push({
+        name: 'Last Month',
+        start_date: Date.today().addMonths(-1).moveToFirstDayOfMonth().clearTime(),
+        end_date: Date.today().addMonths(-1).moveToLastDayOfMonth().addDays(1).clearTime().addMilliseconds(-1)
+      });
+
+      dateRanges.forEach(function(dateRange) {
+        var orders = 0;
+        var sales = 0;
+        var escrow_amount = 0;
+        var profit = 0;
+        ordersEsrowData.forEach(function(order) {
+          if (Date.parse(order.created_at).between(dateRange['start_date'], dateRange['end_date'])) {
+            orders += 1;
+            sales += parseFloat(order['price']) + parseFloat(order['shipping_fee']);
+            escrow_amount += parseFloat(order['price']);
+            profit += parseFloat(order['price']) - order._items.reduce(function(a, b) {
+              return a + parseFloat(b._append.cost);
+            }, 0);
+          }
+        }, this);
+        $('.p-indicator-table tbody').append(`
+          <tr>
+           <td class="text-center">${dateRange.name}</td>
+           <td class="text-center">${orders}</td>
+           <td class="text-center">${money(sales)}</td>
+           <td class="text-center">${money(escrow_amount)}</td>
+           <td class="text-center">${money(profit)}</td>
+          </tr>
+        `);
+      });
+
+    }
+  }
+  var pIndicator = new PIndicator();
+
+  class SalesGraph {
+
+    start_date;
+    end_date;
+    status;
+    item = null;
+    ordersEsrowData;
+    display_sales_graph = 0;
+    mainChart;
+
+    constructor(status, start_date, end_date) {
+      this.status = status;
+      this.start_date = start_date;
+      this.end_date = end_date;
+    }
+
+    setProductsSelection(data) {
+
+      $('#products-selection').empty();
+      $('#products-selection').append(`<option value=" ">-- All --</option>`);
+      data.forEach(function(content) {
+          $('#products-selection').append(`<option data-item-id="${content['item_id']}" data-seller-sku="${content['skus'][0]['SellerSku']}">${content['attributes']['name']}</option>`);
+      })
+    }
+
+    reloadGraphData(obj) {
+      var obj = $(obj);
+      var objId = obj.attr('id');
+
+      //if input is date
+      if (objId === "date1") {
+        var dateRange = obj.val().split('-');
+        if (dateRange.length !== 2) return;
+        var _start_date = Date.parse(dateRange[0]);
+        var _end_date = Date.parse(dateRange[1]);
+        if (!_start_date || !_end_date) return;
+        $('.date-selection-btn-group').children('label').each(function() {
+          $(this).removeClass('active');
+        });
+
+        this.start_date = _start_date.toString(AJAX_DATE_FORMAT);
+        this.end_date = _end_date.toString(AJAX_DATE_FORMAT);
+      }
+      //if input is select date button
+      else if (objId === "option1" || objId === "option2" || objId === "option3") {
+        $('#date1').val("");
+        _end_date = Date.today();
+        if (objId === "option1") _start_date = Date.today().addDays(-30);
+        if (objId === "option2") _start_date = Date.today().addMonths(-3);
+        if (objId === "option3") _start_date = Date.today().addYears(-1);
+
+        this.start_date = _start_date.toString(AJAX_DATE_FORMAT);
+        this.end_date = _end_date.toString(AJAX_DATE_FORMAT);
+      }
+      //if input is product
+      else if (objId === "products-selection") {
+        var _item = $('#products-selection :selected');
+        var itemId = _item.data('item-id');
+        var sellerSku = _item.data('seller-sku');
+
+        if (!itemId) {
+          this.item = null;
+          this.addLoadingToGraph();
+          this.loadGraphData();
+          return;
+        }
+        // var variationId = _item.data('variation-id') || 0;
+        this.item = {item_id:itemId,seller_sku:sellerSku};
+
+        this.addLoadingToGraph();
+        this.loadGraphData();
+        return;
+      }
+
+      this.addLoadingToGraph();
+      getOrdersEscrowData(status, this.start_date, this.end_date).then((data) => this.ordersEsrowData = data).then(() => this.loadGraphData());
+    }
+
+    addLoadingToGraph() {
+      var selector = '.sales-graph.loading-modal';
+      if (!$(selector).hasClass("loading")) $(selector).addClass("loading");
+    }
+
+    timeToDisplaySalesGraph() {
+      this.display_sales_graph += 1;
+      if (this.display_sales_graph == 2) {
+        this.loadGraphData();
+      }
+    }
+
+    loadGraphData() {
+
+      var dates = [];
+      var labels = [];
+      var sales = 0;
+      var escrowAmount = 0;
+      var profit = 0;
+
+      var temp_date = Date.parse(this.start_date);
+      while (temp_date.compareTo(Date.parse(this.end_date).addDays(1)) === -1) {
+        dates.push({
+          'start_date': new Date(temp_date).clearTime(),
+          'end_date': new Date(temp_date).addDays(1).clearTime().addMilliseconds(-1)
+        });
+        labels.push(temp_date.toString('M/d'));
+        temp_date = temp_date.addDays(1);
+      }
+
+      var salesData = new Array(labels.length).fill(0);
+      var escrowAmountData = new Array(labels.length).fill(0);
+      var profitData = new Array(labels.length).fill(0);
+      var orders = 0;
+      var qty_sold = 0;
+
+      dates.forEach(function(dateRange, key) {
+        this.ordersEsrowData.forEach(function(result) {
+          if (Date.parse(result.created_at).between(dateRange['start_date'], dateRange['end_date'])) {
+            if (this.item) {
+              result['_items'].forEach(function(orderItem) {
+                if (orderItem.sku == this.item.seller_sku) {
+                  var quantity_purchased = 1;
+                  var item_sales_amount = parseFloat(orderItem.paid_price);
+                  var item_cost = orderItem._append.cost * quantity_purchased;
+                  
+                  salesData[key] += item_sales_amount;
+                  sales += item_sales_amount;
+                  // console.log(result['_esrow_detail']);
+                  var fees = 0;
+                  var _escrow_amount = item_sales_amount - 0;
+                  // var _escrow_amount = item_sales_amount - (()/ result['_append']['item_count']);
+                  escrowAmount += _escrow_amount
+                  escrowAmountData[key] += _escrow_amount;
+
+                  profitData[key] += _escrow_amount - item_cost;
+                  profit += _escrow_amount - item_cost;
+                  qty_sold += quantity_purchased;
+                }
+              }, this);
+            } else {
+              var total_amount = parseFloat(result['price']) + parseFloat(result['shipping_fee']);
+              var _escrow_amount = parseFloat(result['price']);
+              var cost = 0;
+              // result['items'].forEach()
+              sales += total_amount;
+              salesData[key] += total_amount;
+
+              escrowAmount += _escrow_amount;
+              escrowAmountData[key] += _escrow_amount;
+
+              var _profit = _escrow_amount - result['_items'].reduce(function(a, b) {
+                return a + (parseFloat(b._append.cost));
+              }, 0);
+              profit += _profit
+              profitData[key] += _profit;
+
+              orders++;
+
+            }
+          }
+        }, this);
+      }, this);
+
+      if (this.mainChart) {
+        this.mainChart.destroy();
+      }
+
+      this.mainChart = new Chart(document.getElementById('main-chart'), {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+              label: 'Sales',
+              backgroundColor: coreui.Utils.hexToRgba(coreui.Utils.getStyle('--info'), 10),
+              borderColor: coreui.Utils.getStyle('--primary'),
+              pointHoverBackgroundColor: '#fff',
+              borderWidth: 2,
+              data: salesData.map(a => a.toFixed(2)),
+            },
+            {
+              label: 'Esrow Amount',
+              backgroundColor: 'transparent',
+              borderColor: coreui.Utils.getStyle('--info'),
+              pointHoverBackgroundColor: '#fff',
+              borderWidth: 2,
+              data: escrowAmountData.map(a => a.toFixed(2)),
+            },
+            {
+              label: 'Profit',
+              backgroundColor: 'transparent',
+              borderColor: coreui.Utils.getStyle('--success'),
+              pointHoverBackgroundColor: '#fff',
+              borderWidth: 2,
+              data: profitData.map(a => a.toFixed(2)),
+            },
+          ]
+        },
+        options: {
+          maintainAspectRatio: false,
+          legend: {
+            display: false
+          },
+          scales: {
+            xAxes: [{
+              gridLines: {
+                drawOnChartArea: false
+              }
+            }],
+            yAxes: [{
+              ticks: {
+                beginAtZero: true,
+                // maxTicksLimit: 5,
+                // stepSize: Math.ceil(1000 / 5),
+                // max: max*110/100
+              }
+            }]
+          },
+          elements: {
+            point: {
+              radius: 0,
+              hitRadius: 10,
+              hoverRadius: 4,
+              hoverBorderWidth: 3
+            }
+          },
+          tooltips: {
+            intersect: true,
+            callbacks: {
+              labelColor: function(tooltipItem, chart) {
+                return {
+                  backgroundColor: chart.data.datasets[tooltipItem.datasetIndex].borderColor
+                };
+              }
+            }
+          }
+        }
+      });
+
+      $('#sales').html('$' + money(sales));
+      $('#escrow').html('$' + money(escrowAmount));
+      $('#profit').html('$' + money(profit));
+
+      if (this.item) {
+        $('#orders_text').html('Quantity Sold');
+        $('#orders').html(qty_sold);
+      } else {
+        $('#orders_text').html('Orders');
+        $('#orders').html(orders);
+      }
+
+      $('.sales-graph.loading-modal').removeClass("loading");
+    }
+  }
+  var salesGraph = new SalesGraph(status, Date.parse(end_date).addMonths(-1).toString(AJAX_DATE_FORMAT), end_date);
+
+
+  class InventoryAlert {
+    display_inventory_alert = 0;
+
+    timeToDisplayInventoryAlert() {
+      this.display_inventory_alert += 1;
+      if (this.display_inventory_alert == 2) {
+        this.loadInventoryAlert();
+      }
+    }
+
+    loadInventoryAlert() {
+
+      var low_on_stock = 0;
+      var out_of_stock = 0;
+
+      productsData.forEach(function(productData) {
+
+          if(productData.skus[0].quantity == 0)out_of_stock++;
+          else if(productData._append.low_on_stock)low_on_stock++;
+      });
+
+      $('#low-on-stock-text').html(low_on_stock);
+      $('#no-stock-text').html(out_of_stock);
+
+      $('.inventory-alert.loading-modal').removeClass("loading");
+    }
+  }
+
+  var inventoryAlert = new InventoryAlert;
+
+  @endif
 </script>
 @endsection

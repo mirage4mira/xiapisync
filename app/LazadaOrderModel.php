@@ -12,7 +12,7 @@ class LazadaOrderModel extends Model
     public $end_time;
     public $orders;
 
-    public function __construct($byCreated = true, Carbon $start_time, Carbon $end_time,$shop)
+    public function __construct($byCreated = true, Carbon $start_time, Carbon $end_time,$shop = null)
     {
         $this->byCreated = $byCreated;
         $this->start_time = $start_time->toIso8601String();
@@ -61,6 +61,13 @@ class LazadaOrderModel extends Model
         return $this;
     }
 
+    public function paidOrders(){
+        $this->orders = collect($this->orders)->filter(function($orderDetail){
+            return in_array($orderDetail["statuses"][0],["pending","ready_to_ship","delivered","shipped"]);
+        })->values()->toArray();
+        return $this;
+    }
+
     public function getOrdersItems(){
         $ordersIdChunk = collect($this->orders)->pluck('order_id')->chunk(100)->toArray();
 
@@ -89,6 +96,27 @@ class LazadaOrderModel extends Model
                 if($order['order_id'] == $_order['order_id']){
                     $this->orders[$key]['_items'] = $order['order_items'];
                 }
+            }
+        }
+        
+        $stocks = LazadaStock::with('costs')->where('shop_id', auth()->user()->current_shop_id ? auth()->user()->current_shop_id : $this->shop->id )->get();
+        
+        foreach($this->orders as $key => $order){
+            foreach($order['_items'] as $key2 => $item){
+                foreach ($stocks as $stock) {
+                    if ($item['sku'] == $stock['platform_seller_sku']) {
+                        // \Log::alert(Carbon::parse($order['created_at'])->format("Y-m-d"));
+                        // \Log::alert($item['sku']);
+                        
+                        $cost = $stock->costs->where('from_date', '<=', Carbon::parse($order['created_at'])->format("Y-m-d"))->sortByDesc('from_date')->first();
+                        $this->orders[$key]['_items'][$key2]['_append']['cost'] = $cost->cost;
+                        break;
+                    }
+                    else{
+                        $ordersDetail[$key]['items'][$key2]['_append']['cost'] = 0;
+                    }
+                }
+
             }
         }
         return $this;

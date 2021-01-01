@@ -98,7 +98,9 @@ table.dataTable.table-striped.DTFC_Cloned tbody tr:nth-of-type(even) {
                       <th class="text-center">Average Monthly Sales</th>
                       <th class="text-center">Average Monthly Profit</th>
                       <th class="text-center">ROI</th>
+                      @if(auth()->user()->currentShop->platform == "SHOPEE")
                       <th class="text-center">Rating Star</th>
+                      @endif
                     </tr>
                     <tr id="filterrow">
                       <th style="min-width:250px;background-color:white;"></th>
@@ -116,7 +118,9 @@ table.dataTable.table-striped.DTFC_Cloned tbody tr:nth-of-type(even) {
                       <th class="text-center"></th>
                       <th class="text-center"></th>
                       <th class="text-center"></th>
+                      @if(auth()->user()->currentShop->platform == "SHOPEE")
                       <th class="text-center"></th>
+                      @endif
                     </tr>
                   </thead>
                   <tbody>
@@ -138,7 +142,9 @@ table.dataTable.table-striped.DTFC_Cloned tbody tr:nth-of-type(even) {
                       <th></th>
                       <th></th>
                       <th></th>
-                      <th></th>
+                      @if(auth()->user()->currentShop->platform == "SHOPEE")
+                        <th></th>
+                      @endif
                       
                     </tr>
                   </tfoot>
@@ -218,6 +224,7 @@ table.dataTable.table-striped.DTFC_Cloned tbody tr:nth-of-type(even) {
 <script src="{{ asset('js/main.js') }}"></script>
 
 <script>
+  @if(auth()->user()->currentShop->platform == "SHOPEE")
   $(document).ready(function() {
 
     getProductsData().then(function(data) {
@@ -307,6 +314,7 @@ table.dataTable.table-striped.DTFC_Cloned tbody tr:nth-of-type(even) {
 
       datas.forEach(function(data) {
         data.precentage_asset_value = Math.round(data.asset_value / totalAssetValue * 100, 2);
+        if(isNaN(data.precentage_asset_value)) data.precentage_asset_value = 0;
       });
       this.loadTableRow(datas);
     }
@@ -350,7 +358,9 @@ table.dataTable.table-striped.DTFC_Cloned tbody tr:nth-of-type(even) {
           });
           inboundTooltipText = inboundTooltipTextArr.join("&#013;");
         }
-        console.log(data.inbound);
+
+        var roi = Math.round((data.avg_monthly_profit/data.avg_monthly_cost) * 100);
+     
         $('table.inventory-table tbody').append(`
             <tr data-item-id="${data.item_id}" data-variation-id="${data.variation_id}" data-stock-id="${data.stock_id}">
               <td><div class="d-flex">
@@ -373,7 +383,7 @@ table.dataTable.table-striped.DTFC_Cloned tbody tr:nth-of-type(even) {
               <td><div class="text-center">${data.avg_monthly_quantity}</div></td>
               <td><div class="text-center">${data.avg_monthly_sales}</div></td>
               <td><div class="text-center">${data.avg_monthly_profit}</div></td>
-              <td><div class="text-center">${Math.round((data.avg_monthly_profit/data.avg_monthly_cost) * 100 || 0)}</div></td>
+              <td><div class="text-center">${ isInfinite(roi)?0 : (isNaN(roi)?0 : roi)}</div></td>
               <td><div class="text-center">${Math.round(data.rating_star * 100) / 100}</div></td>
             </tr>`);
       });
@@ -551,7 +561,8 @@ table.dataTable.table-striped.DTFC_Cloned tbody tr:nth-of-type(even) {
         data,
         success: function(data) {
           $.notify(`Cost Successfully Updated!`,"success");
-        window.location.reload();
+          $('.cost-modal').modal("hide");
+          $('tr[data-item-id="'+data.item_id+'"][data-variation-id="'+data.variation_id+'"] div[onclick="inventoryTable.costModal(this)"]').html(data.costs[data.costs.length-1].cost)
         },
         error: ajaxErrorResponse
       })
@@ -718,6 +729,468 @@ table.dataTable.table-striped.DTFC_Cloned tbody tr:nth-of-type(even) {
 			evt.cancelBubble = true;
 		}
 	}
+  @elseif(auth()->user()->currentShop->platform == "LAZADA")
+
+  $(document).ready(function() {
+
+getProductsData().then(function(data) {
+  inventoryTable.productsData = data;
+  console.log(123);
+  inventoryTable.loadInventoryTableData();
+  inventoryTable.loadDataTable();
+  inventoryTable.removeLoadingModal();
+});
+
+
+});
+
+class InventoryTable {
+productsData;
+
+loadInventoryTableData() {
+  var datas = [];
+  this.productsData.forEach(function(productData) {
+      var data = {};
+      data.item_id = productData.item_id;
+      data.compressed_img = productData._append.image_path; 
+      data.image = productData.skus[0].Images[0];
+      data.name = productData.attributes.name;
+      data.sku = productData.skus[0].SellerSku;
+      data.total = productData._append.inbound.reduce((a,b)=> a + b.pivot.quantity,0) + productData.skus[0].quantity;
+      data.inbound = productData._append.inbound;
+      data.available = productData.skus[0].quantity;
+      data.reserved = productData._append.safety_stock;
+      data.days_to_supply = productData._append.days_to_supply;
+      data.price = productData.skus[0].price;
+      data.prep_cost = productData._append.prep_cost;
+      data.cost = productData._append.cost;
+      data.costs = productData._append.costs;
+      data.asset_value = data.cost * data.total;
+
+      data.stock_id = productData._append.stock_id;
+      // data.currency = productData.currency;
+      // data.rating_star = productData.rating_star;
+      data.stock_status = productData.skus[0].quantity?(productData._append.low_on_stock?"Low On Stock":"Good"):"Out Of Stock";
+      data.additional_stock_required = productData._append.additional_stock_required;
+      data.avg_monthly_profit = productData._append.avg_monthly_profit;
+      data.avg_monthly_quantity = productData._append.avg_monthly_quantity;
+      data.avg_monthly_sales = productData._append.avg_monthly_sales;
+      data.avg_monthly_cost = productData._append.avg_monthly_cost;
+      datas.push(data);
+  });
+
+  var totalAssetValue = 0;
+
+  datas.forEach(function(data) {
+    totalAssetValue += data.asset_value;
+  });
+
+  datas.forEach(function(data) {
+    console.log(data.asset_value,totalAssetValue);
+    data.precentage_asset_value = Math.round(data.asset_value / totalAssetValue * 100, 2);
+    if(isNaN(data.precentage_asset_value)) data.precentage_asset_value = 0;
+  });
+  this.loadTableRow(datas);
+}
+
+loadTableRow(datas) {
+
+  datas.forEach(function(data) {
+
+    var priceTooltipText;
+
+    if (data.wholesales) {
+      var priceTooltipTextArr = [];
+      data.wholesales.forEach(function(pricing) {
+        priceTooltipTextArr.push(pricing.min + " to " + pricing.max + " @" + data.currency + money(pricing.unit_price));
+      });
+      priceTooltipText = priceTooltipTextArr.join("&#013;");
+    }
+
+    var costTooltipText;
+    if (data.costs) {
+      var costTooltipTextArr = [];
+      data.costs.forEach(function(cost, idx) {
+        var startdateStr = (Date.parse(cost['from_date']).toString(DATEPICKER_DATE_FORMAT) == EARLIEST_DATE) ? "Past" : Date.parse(cost['from_date']).toString(DATEPICKER_DATE_FORMAT);
+        if (data.costs[idx + 1]) {
+          costTooltipTextArr.push(startdateStr + " to " + Date.parse(data.costs[idx + 1]['from_date']).addDays(-1).toString(DATEPICKER_DATE_FORMAT) + " @" + data.currency + money(cost['cost']));
+        } else {
+          costTooltipTextArr.push(startdateStr + " to Present" + " @" + data.currency + money(cost['cost']));
+        }
+      });
+      costTooltipText = costTooltipTextArr.join("&#013;");
+    }
+
+    var inboundTooltipText;
+    var inbound = 0;
+    if (data.inbound.length) {
+      var inboundTooltipTextArr = [];
+      data.inbound.forEach(function(inboundOrder) {
+        console.log(123);
+        inboundTooltipTextArr.push(inboundOrder.pivot.quantity + " @ " + Date.parse(inboundOrder.payment_date).toString(DATEPICKER_DATE_FORMAT));
+        inbound += parseFloat(inboundOrder.pivot.quantity);
+      });
+      inboundTooltipText = inboundTooltipTextArr.join("&#013;");
+    }
+    $('table.inventory-table tbody').append(`
+        <tr data-item-id="${data.item_id}" data-variation-id="${data.variation_id}" data-stock-id="${data.stock_id}">
+          <td><div class="d-flex">
+            <img src="${data.compressed_img ? '/docs?file=' + data.compressed_img : data.image}" style="object-fit:contain;width:50px;height:50px;">
+            <div class="ml-1 d-flex flex-column align-items-start">
+              <strong style="height:80px;overflow:hidden;">${data.name}</strong>
+              <div>${data.variation_name || ''} ${data.sku ? '[' + data.sku + ']':'' }</div>
+            </div>
+          </div></td>
+          <td><div class="text-center"><span class="badge badge-${data.stock_status == "Good"?"success":(data.stock_status == "Low On Stock"?"warning" : "danger")}">${data.stock_status}<br>${data.additional_stock_required?`- ${data.additional_stock_required}`:''}</span></div></td>
+          <td><div class="text-center">${data.total}</div></td>
+          <td><div class="text-center inbound-input" data-toggle="tooltip" data-placement="bottom" title="${inboundTooltipText}">${inbound}</div></td>
+          <td contenteditable='true' name="available"><div class="text-center available-input">${data.available}</div></td>
+          <td contenteditable='true' name="reserved"><div class="text-center reserved-input">${data.reserved}</div></td>
+          <td contenteditable='true' name="days-to-supply"><div class="text-center days-to-supply-input">${data.days_to_supply}</div></td>
+          <td ${priceTooltipText?'onclick="alert(\'Price for item with wholesale prices are uneditable!\')"':"contenteditable='true'"}  data-toggle="tooltip" data-placement="bottom" title="${priceTooltipText}" name="price"><div class="text-center price-input">${data.price}</div></td>
+          <td contenteditable='false' data-toggle="tooltip" data-placement="bottom" title="${costTooltipText}"><div class="text-center" onclick="inventoryTable.costModal(this)">${data.cost}</div></td>
+          <td><div class="text-center">${money(data.asset_value)}</div></td>
+          <td><div class="text-center">${data.precentage_asset_value}</div></td>
+          <td><div class="text-center">${data.avg_monthly_quantity}</div></td>
+          <td><div class="text-center">${data.avg_monthly_sales}</div></td>
+          <td><div class="text-center">${data.avg_monthly_profit}</div></td>
+          <td><div class="text-center">${Math.round((data.avg_monthly_profit/data.avg_monthly_cost) * 100 || 0)}</div></td>
+        </tr>`);
+  });
+
+  $('.inventory-table').on('focus', '[contenteditable="true"]', function() {
+    var $this = $(this);
+    $this.data('before', $this.html());
+    return $this;
+  }).on('blur keyup paste input', '[contenteditable="true"]', function() {
+    var $this = $(this);
+    if ($this.data('before') !== $this.html()) {
+      $this.data('before', $this.html());
+      $this.trigger('change');
+    }
+    return $this;
+  });
+  $('.inventory-table td').on('blur', function(e) {
+    if (e) {
+      inventoryTable.updateStock(e);
+    }
+  });
+}
+
+
+updateStock(e) {
+  var obj = $(e.target);
+  console.log(obj);
+  var tr = obj.closest('tr');
+  var item_id = tr.data('item-id');
+  var variation_id = tr.data('variation-id');
+  var stock_id = tr.data('stock-id');
+  var available = tr.find('.available-input').html();
+  var reserved = tr.find('.reserved-input').html();
+  var days_to_supply = tr.find('.days-to-supply-input').html();
+  var price = tr.find('.price-input').html();
+
+  $.ajax({
+    async: false,
+    type: 'POST',
+    url: '/inventory/update-item',
+    data: {
+      _token: CSRF_TOKEN,
+      data: JSON.stringify({
+        update_price: $(obj.children()[0]).hasClass('price-input'),
+        update_stock_count: $(obj.children()[0]).hasClass('available-input'),
+        item_id: item_id,
+        variation_id,
+        stock_id,
+        available,
+        reserved,
+        days_to_supply,
+        price,
+      })
+
+    },
+    success: function(data) {
+      $.notify(`${_.startCase(obj.attr("name").replaceAll("-"," "))} Successfully Updated!`,"success");
+    },
+    error: ajaxErrorResponse
+  })
+}
+
+costModal(obj) {
+  obj = $(obj);
+  var item_id = obj.closest('tr').data('item-id');
+  var variation_id = obj.closest('tr').data('variation-id');
+
+  var costs;
+  this.productsData.forEach(function(product) {
+    if (product.item_id == item_id) {
+        costs = product._append.costs;
+    }
+  })
+  $('.cost-modal .modal-body').empty();
+  costs.forEach(function(cost, idx, costs) {
+    this.addCostRow(cost, idx, costs);
+  }, this);
+  this.refreshCostDate();
+
+  $('.cost-modal').data('item-id',item_id);
+  $('.cost-modal').modal('show');
+}
+
+addNewCost() {
+  // var prev_start_date = $('.cost-modal .modal-body div.row:nth-last-child(1) input[name="start_date"]').val();
+  // var today = Date.today().toString(DATEPICKER_DATE_FORMAT);
+  // // var prev_end_date = $('.cost-modal .modal-body div.row:nth-last-child(1) input[name="start_date"]');
+  // if(prev_start_date != today){
+  this.addCostRow();
+  this.refreshCostDate();
+  // }else{
+  // alert("Error! Date " + today + " already exist!");
+  // }
+
+
+}
+
+addCostRow(cost, idx, costs) {
+
+  if (!cost && !idx && !costs) {
+    var prev_start_date = Date.parse($('.cost-modal .modal-body div.row:nth-last-child(1) input[name="start_date"]').val());
+    var startDateStr = Date.today().compareTo(prev_start_date) == 1 ? Date.today().toString(DATEPICKER_DATE_FORMAT) : prev_start_date.addDays(1).toString(DATEPICKER_DATE_FORMAT);
+    var cost_id = 0;
+    var _cost = $('.cost-modal .modal-body div.row:nth-last-child(1) input[name="cost"]').val();
+    var end_date = "Present";
+    var first_row = false;
+  } else {
+    var startDateStr = Date.parse(cost.from_date).toString(DATEPICKER_DATE_FORMAT);
+    if (startDateStr == EARLIEST_DATE) startDateStr = "Past";
+    var cost_id = cost.id || 0;
+    var _cost = cost.cost;
+    var end_date = costs[idx + 1] ? Date.parse(costs[idx + 1].from_date).addDays(-1).toString(DATEPICKER_DATE_FORMAT) : "Present";
+    var first_row = idx == 0 ? true : false;
+  }
+
+  $('.cost-modal .modal-body').append(`
+    <div class="row my-1" data-stock-cost-id="${cost_id}">
+      <div class="col-6"><div class="input-group"><input class="form-control" name="start_date" value="${startDateStr}" ${first_row?'readonly':''} onchange="inventoryTable.refreshCostDate()"><input class="form-control" name="end_date" value="${end_date}" readonly></div></div>
+      <div class="col-4"><input  class="form-control" name="cost" type="number" min="0.01" step="0.01" value="${_cost}"></div>
+      ${startDateStr == "Past" ? '': '<div class="col-2"><button class="btn btn-danger" type="button" onclick="inventoryTable.deleteStockCost(this)"><i class="fa fa-trash-o" aria-hidden="true" ></i></button></div>'}
+    </div>
+  `);
+  // var start_date_input = $('.cost-modal .modal-body  div.row:nth-last-child(1) input[name="start_date"]');
+  // var last_start_date_input = $('.cost-modal .modal-body  div.row:nth-last-child(2) input[name="start_date"]');  
+  // var second_last_start_date_input = $('.cost-modal .modal-body  div.row:nth-last-child(3) input[name="start_date"]');  
+
+  // if(last_start_date_input.length){
+  //   var start_date = Date.parse(last_start_date_input.val() == "Past" ? EARLIEST_DATE : last_start_date_input.val()).addDays(1);
+  //   start_date_input.datepicker({
+  //     startDate: start_date,
+  //   });
+  //   if(second_last_start_date_input.length){
+  //     console.log(second_last_start_date_input.val());
+  //     var _start_date = Date.parse(second_last_start_date_input.val() == "Past" ? EARLIEST_DATE : second_last_start_date_input.val()).addDays(1);
+  //     last_start_date_input.datepicker('destroy').datepicker({
+  //       start_date : _start_date,
+  //       endDate: start_date.addDays(-1),
+  //     })
+  //   }
+  // }
+
+}
+
+
+saveCost() {
+  var data = {};
+
+  data.item_id = $('.cost-modal').data('item-id');
+  data._token = CSRF_TOKEN; 
+
+  data.costs = [];
+  $('.cost-modal .modal-body div.row').each(function(idx, obj) {
+    var obj = $(obj);
+    data.costs.push({
+      'stock_cost_id': obj.data('stock-cost-id'),
+      'from_date': obj.find('input[name="start_date"]').val() == "Past" ? EARLIEST_DATE : obj.find('input[name="start_date"]').val(),
+      'cost': obj.find('input[name="cost"]').val()
+    });
+  });
+
+  $.ajax({
+    async: false,
+    type: 'POST',
+    url: '/inventory/update-cost',
+    data,
+    success: function(data) {
+      .notify(`Cost Successfully Updated!`,"success");
+          $('.cost-modal').modal("hide");
+          $('tr[data-item-id="'+data.item_id+'"][data-variation-id="'+data.variation_id+'"] div[onclick="inventoryTable.costModal(this)"]').html(data.costs[data.costs.length-1].cost)
+    },
+    error: ajaxErrorResponse
+  })
+}
+deleteStockCost(obj) {
+  var obj = $(obj);
+  var row = obj.closest('div.row');
+  row.remove();
+  this.refreshCostDate();
+}
+
+refreshCostDate() {
+  $('.cost-modal .modal-body div.row').each(function(idx, obj) {
+    // console.log(idx,$('.cost-modal .modal-body div.row').length);
+    // if(idx < $('.cost-modal .modal-body div.row').length){
+    var row = $(obj);
+    var end_date_input = row.find('[name="end_date"]');
+    var end_date = Date.parse(end_date_input.val());
+    // console.log(end_date);
+    var next_start_date_input = $('.cost-modal .modal-body div.row:nth-child(' + (idx + 2) + ') input[name="start_date"]');
+    var next_start_date = Date.parse(next_start_date_input.val());
+
+    end_date_input.val(next_start_date ? next_start_date.addDays(-1).toString(DATEPICKER_DATE_FORMAT) : "Present");
+    // }
+
+
+    var start_date_input = $('.cost-modal .modal-body  div.row:nth-child(' + (idx + 1) + ') input[name="start_date"]');
+    var last_start_date_input = $('.cost-modal .modal-body  div.row:nth-child(' + (idx) + ') input[name="start_date"]');
+    var second_last_start_date_input = $('.cost-modal .modal-body  div.row:nth-child(' + (idx - 1) + ') input[name="start_date"]');
+
+    if (last_start_date_input.length) {
+      start_date_input.datepicker('destroy').datepicker({
+        startDate: last_start_date_input.val() == "Past" ? Date.parse(EARLIEST_DATE).addDays(1).toString(DATEPICKER_DATE_FORMAT) : Date.parse(last_start_date_input.val()).addDays(1).toString(DATEPICKER_DATE_FORMAT),
+      });
+      if (second_last_start_date_input.length) {
+        last_start_date_input.datepicker('destroy').datepicker({
+          startDate: second_last_start_date_input.val() == "Past" ? Date.parse(EARLIEST_DATE).addDays(1).toString(DATEPICKER_DATE_FORMAT) : Date.parse(second_last_start_date_input.val()).addDays(1).toString(DATEPICKER_DATE_FORMAT),
+          endDate: Date.parse(start_date_input.val()).addDays(-1).toString(DATEPICKER_DATE_FORMAT),
+        });
+      }
+    }
+    // var second_last_start_date_input = $('.cost-modal .modal-body  div.row:nth-child('+ (idx - 1) +') input[name="start_date"]');
+    // console.log(idx,last_start_date_input,second_last_start_date_input);
+    // last_start_date_input.datepicker('destroy').datepicker({
+
+    // });
+    // if (last_start_date_input.length) {
+    //   var start_date = Date.parse(last_start_date_input.val() == "Past" ? EARLIEST_DATE : last_start_date_input.val()).addDays(1);
+    //   start_date_input.datepicker({
+    //     startDate: start_date,
+    //   });
+    //   if (second_last_start_date_input.length) {
+    //     console.log(second_last_start_date_input.val());
+    //     var _start_date = Date.parse(second_last_start_date_input.val() == "Past" ? EARLIEST_DATE : second_last_start_date_input.val()).addDays(1);
+    //     last_start_date_input.datepicker('destroy').datepicker({
+    //       start_date: _start_date,
+    //       endDate: start_date.addDays(-1),
+    //     })
+    //   }
+    // }
+  })
+}
+
+loadDataTable() {
+
+      // Setup - add a text input to each footer cell
+  $('.inventory-table thead tr#filterrow th').each( function (idx,ele) {
+      $(this).html( `<input type="text" class="form-control" onclick="stopPropagation(event);" ${idx == 0? `placeholder="Search"`:''}/>` );
+  } );
+
+  var api;
+  var table = $('.inventory-table').dataTable({
+    "dom": '<"pull-left"f><"pull-right"l>tip',
+    "language": {
+      "search": "Search Products:&nbsp;",
+
+    },
+    orderCellsTop: true,
+    scrollY: 400,
+    scrollX: true,
+    scrollCollapse: true,
+    paging: false,
+    fixedColumns: true,
+    fixedHeader: true,
+    autoWidth: true,
+
+    drawCallback: function(tfoot) {
+      // $(".dataTables_scrollHeadInner").css({"width":"100%",'height':"100%"});
+      // $('.inventory-table').css({"width":"100%"});
+      api = this.api();
+      // api.fixedHeader.adjust();
+      // api.column(9).every(function() {
+      //   var sum = this
+      //     .data()
+      //     .reduce(function(a, b) {
+      //       var x = parseFloat(a);
+      //       var y = parseFloat(b);
+      //       return x + y;
+      //     }, 0);
+      //   console.log(sum); //alert(sum);
+      //   $(this.footer()).html(sum);
+      // });
+
+      var sum = api.column(9).data().reduce(function(a,b){
+        b = b.replace(/<[^>]*>?/gm, '').replace(/,/g ,"")
+        // console.log(b);
+        return a + parseFloat(b);
+
+      },0);
+      // console.log(sum);
+      $(api.column(9).footer()).html(
+
+        // money(1)
+        money(sum)
+      );
+
+
+    },
+    //         "initComplete": function (settings, json) {  
+    // },
+  });
+
+  var urlParams = new URLSearchParams(window.location.search);
+  var stock = urlParams.get('stock');
+  
+  if(stock){
+    console.log(stock.replaceAll("-",' '));
+    api.column(1).search(stock.replaceAll("-",' ')).draw();
+  }
+
+  $(".inventory-table thead input").on( 'keyup change', function () {
+    api
+        .column( $(this).parent().index()+':visible' )
+        .search( this.value )
+        .draw();
+} );
+  // $(".inventory-table").wrap("<div style='overflow:auto; width:100%;position:relative;height:400px;'></div>");            
+
+  // $('.inventory-table').wrap('<div class="dataTables_scroll" />');
+  // jQuery('.dataTable').wrap('<div class="dataTables_scroll" />');
+  // table.columns.adjust().draw();
+  $(".dataTables_scrollFootInner").css({"box-sizing":"content-box"})
+  $(".DTFC_LeftBodyLiner").css({"overflow":"hidden","width":"100%"})
+  $('.dataTables_filter input[type="search"]').css({
+    'width': '350px',
+    'display': 'inline-block'
+  });
+}
+removeLoadingModal() {
+  // $('button.c-sidebar-minimizer.c-class-toggler').trigger('click');
+  $('.inventory.loading-modal').removeClass("loading");
+}
+
+showImportFromExcelModal() {
+  $('.import-from-excel-modal').modal('show');
+}
+}
+var inventoryTable = new InventoryTable();
+
+function stopPropagation(evt) {
+if (evt.stopPropagation !== undefined) {
+  evt.stopPropagation();
+} else {
+  evt.cancelBubble = true;
+}
+}
+
+  @endif
 
 </script>
 @endsection

@@ -2,13 +2,14 @@
 
 namespace App;
 
+use Carbon\Carbon;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     use Notifiable;
     use SoftDeletes;
@@ -19,8 +20,8 @@ class User extends Authenticatable
      *
      * @var array
      */
-    protected $fillable = [
-        'name', 'email', 'password','username'
+    protected $guarded= [
+        'password', 'remember_token',
     ];
 
     /**
@@ -52,5 +53,19 @@ class User extends Authenticatable
 
     public function currentShop(){
         return $this->belongsTo('App\Shop','current_shop_id');
+    }
+
+    public function updatePlanExpiryDate($payment){
+        $remainingDays = now()->diffInDays($this->plan_expiry_date);
+        $new_plan_expiry_date = Carbon::parse($payment->pay_time)->addDays(365)->addDays($remainingDays);
+        $this->plan_expiry_date = $new_plan_expiry_date;
+        $this->save(); 
+    }
+
+    public function planExpired(){
+        if(Carbon::parse(auth()->user()->plan_expiry_date)->lt(now())){
+            return true;   
+        }
+        return false;
     }
 }

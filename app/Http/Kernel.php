@@ -53,6 +53,7 @@ class Kernel extends HttpKernel
     protected $routeMiddleware = [
         'auth' => \App\Http\Middleware\Authenticate::class,
         'check.got.shop' => \App\Http\Middleware\CheckGotShop::class,
+        'check.plan.expiry' => \App\Http\Middleware\CheckPlanExpiry::class,
         'check.settings.key' => \App\Http\Middleware\CheckSettingsKey::class,
         'auth.basic' => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
         'bindings' => \Illuminate\Routing\Middleware\SubstituteBindings::class,

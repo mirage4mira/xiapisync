@@ -4,7 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\User;
-
+use App\Notifications\EmailChangeNotification;
+use Illuminate\Support\Facades\Notification;
 class UsersController extends Controller
 {
 
@@ -16,7 +17,7 @@ class UsersController extends Controller
     public function __construct()
     {
         $this->middleware('auth');
-        $this->middleware('admin');
+        // $this->middleware('admin');
     }
 
     /**
@@ -49,10 +50,9 @@ class UsersController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function edit($id)
+    public function edit()
     {
-        $user = User::find($id);
-        return view('dashboard.admin.userEditForm', compact('user'));
+        return view('settings');
     }
 
     /**
@@ -62,18 +62,57 @@ class UsersController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(Request $request)
+    {   
+
+        if($request->tab == "user"){
+
+            $validatedData = $request->validate([
+                'name'       => 'required|min:1|max:256',
+                'username'       => 'required|min:1|max:256|unique:users,username,'.auth()->id(),
+                'email'      => 'required|email|max:256|unique:users,email,'.auth()->id(),
+            ]);
+    
+            $user = auth()->user();
+            $user->name       = $request->input('name');
+            $user->username       = $request->input('username');
+            
+    
+            if($user->email != $request->input('email')){
+                Notification::route('mail', $request->email)
+                ->notify(new EmailChangeNotification(Auth::user()->id));
+            }
+    
+            $user->save();
+            $request->session()->flash('success_msgs', ['Successfully updated user!']);
+            
+            return redirect()->back()->with('tab',$request->tab);
+        }elseif($request->tab == "user-password"){
+            $validatedData = $request->validate([
+                'password'       => 'required|same:confirm_password|min:8',
+                ]);
+                $user = auth()->user();
+                $user->password = bcrypt($request->input('password'));
+                $user->save();
+                
+            $request->session()->flash('success_msgs', ['Successfully updated user!']);
+            return redirect()->back()->with('tab',$request->tab);
+        }
+    }
+
+    public function verify(Request $request, User $user, string $email)
     {
-        $validatedData = $request->validate([
-            'name'       => 'required|min:1|max:256',
-            'email'      => 'required|email|max:256'
+        $request->validate([
+            'email' => 'required|email|unique:users'
         ]);
-        $user = User::find($id);
-        $user->name       = $request->input('name');
-        $user->email      = $request->input('email');
-        $user->save();
-        $request->session()->flash('message', 'Successfully updated user');
-        return redirect()->route('users.index');
+        
+        // Change the Email
+        $user->update([
+            'email' => $request->email
+        ]);
+
+        // And finally return the view telling the change has been done
+        return response()->view('user.email.change-complete');
     }
 
     /**

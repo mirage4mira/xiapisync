@@ -92,7 +92,7 @@ class ShopeeOrderModel extends Model
         $path = '/api/v1/orders/get';
         $this->getDateRanges();
         $datas = [];
-  
+
         foreach ($this->dateRanges as $dateRange) {
 
             if ($_status === 'PAID') {
@@ -110,7 +110,7 @@ class ShopeeOrderModel extends Model
                 }
             } else {
                 $data = [
-                    'order_status' => $status,
+                    'order_status' => $_status,
                     'partner_id' => shopee_partner_id(),
                     'shopid' => intval(shopee_shop_id($this->shop)),
                     'timestamp' => $this->timestamp,
@@ -131,7 +131,7 @@ class ShopeeOrderModel extends Model
 
     public function getOrdersDetail()
     {
-        $cacheName = setShopUserCacheName('completed_orders_detail',$this->shop);
+        $cacheName = setShopCacheName('completed_orders_detail',$this->shop);
 
         if(Cache::has($cacheName)){
             $cachedCompletedOrdersDetail = Cache::get($cacheName);
@@ -192,7 +192,8 @@ class ShopeeOrderModel extends Model
         }else{
             $shop_id = auth()->user()->current_shop_id;
         }
-        $stocks = Stock::with('costs')->where('shop_id', $shop_id)->get();
+        $stocks = ShopeeStock::with('costs')->where('shop_id', $shop_id)->get();
+  
         foreach ($ordersDetail as $key => $orderDetail) {
             $item_count = 0;
             $item_amount = 0;
@@ -234,7 +235,7 @@ class ShopeeOrderModel extends Model
 
     public function getOrdersEscrowDetail()
     {   
-        $cacheName = setShopUserCacheName('orders_escrow_detail',$this->shop);
+        $cacheName = setShopCacheName('orders_escrow_detail',$this->shop);
 
         if(Cache::has($cacheName)){
             $orders_escrow_detail = Cache::get($cacheName);

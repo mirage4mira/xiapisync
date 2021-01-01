@@ -5,7 +5,7 @@
 <input type="hidden" name="item_id[{{$inputArrayNumber}}]" value="{{$shopeeItem['item_id']}}">
 <input type="hidden" name="variation_id[{{$inputArrayNumber}}]" value="{{isset($shopeeItem['_variation']) && $shopeeItem['_variation'] ? $shopeeItem['_variation']['variation_id'] : 0}}">
 @foreach($categoryAttr as $category)
-<div class="col-4">
+<div class="col-md-4 col-sm-6">
 <div class="form-group">
     <label for=""
     @if($category['is_mandatory'])
@@ -92,6 +92,9 @@
                         $options = $category['options'];
                     }
                 ?>
+                @if(!$category['is_mandatory'])
+                <option></option>
+                @endif
                 @foreach($options as $option)
 
                     <option

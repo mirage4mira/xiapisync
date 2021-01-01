@@ -19,7 +19,7 @@ class ShopeeProductModel extends Model
     {
         $this->shop = $shop;
         $this->timestamp = time();
-        $this->cacheName = setShopUserCacheName('items_detail',$shop);
+        $this->cacheName = setShopCacheName('items_detail',$shop);
     }
 
     public function getItemsList()
@@ -41,6 +41,7 @@ class ShopeeProductModel extends Model
             ];
 
             $responseData = shopee_http_post($path, $data)->json();
+            
             foreach ($responseData['items'] as $item) {
                 $this->itemsList[] = $item;
             }
@@ -95,7 +96,7 @@ class ShopeeProductModel extends Model
     public function getDetailedItemsDetail($cached = true)
     {
 
-        $months = 6;
+        $months = 3;
         $daysInMonth = 30;
 
         $start_date = now()->subDays($months * $daysInMonth);
@@ -111,17 +112,17 @@ class ShopeeProductModel extends Model
             updateLastSyncTimeCookie();
         }
         
-        $ordersDetailCacheName = setShopUserCacheName('orders_detail_for_items_detail');
+        $ordersDetailCacheName = setShopCacheName('orders_detail_for_items_detail',$this->shop);
         
         if(Cache::has($ordersDetailCacheName)){
             $orderDetails = Cache::get($ordersDetailCacheName);
         }else{
-            $orderDetails = (new ShopeeOrderModel($start_date,now()))->getOrdersList("PAID")->getOrdersDetail();
+            $orderDetails = (new ShopeeOrderModel($start_date,now(),$this->shop))->getOrdersList("PAID")->getOrdersDetail();
             Cache::put($ordersDetailCacheName,$orderDetails,now()->endOfDay());
         }
 
-        $stocks = Stock::with(['costs', 'inbound_orders','stock_syncs'])->where('shop_id', Auth::user()->current_shop_id)->get();
-
+        $stocks = ShopeeStock::with(['costs', 'inbound_orders','stock_syncs'])->where('shop_id', Auth::user()->current_shop_id)->get();
+        
         foreach ($products as $key1 => $product) {
             if (!empty($product['variations'])) {
                 foreach ($product['variations'] as $key2 => $variation) {
@@ -240,9 +241,6 @@ class ShopeeProductModel extends Model
                 }
             }
         }
-        \Log::alert(microtime(true) - LARAVEL_START);
-        \Log::alert('end');
-
         return $products;
     }
 
@@ -337,9 +335,9 @@ class ShopeeProductModel extends Model
 
     public function createInitialStockAndCost($products)
     {
-        $settings =  getShopSettingSession();
+        // $settings =  getShopSettingSession();
         $default_cogs_percentage = 0;
-        $stocks = Stock::select('id', 'platform_item_id', 'platform_variation_id')->where('shop_id', Auth::user()? Auth::user()->current_shop_id : $this->shop->id)->get();
+        $stocks = ShopeeStock::select('id', 'platform_item_id', 'platform_variation_id')->where('shop_id', Auth::user()? Auth::user()->current_shop_id : $this->shop->id)->get();
         foreach ($products as $product) {
             if (!empty($product['variations'])) {
                 foreach ($product['variations'] as $variation) {
@@ -352,7 +350,7 @@ class ShopeeProductModel extends Model
                         }
                     }
                     if (!$item_stock) {
-                        $item_stock = Stock::create(['shop_id' => Auth::user()->current_shop_id, 'platform_item_id' => $product['item_id'], 'platform_variation_id' => $variation['variation_id'], 'safety_stock' => 0]);
+                        $item_stock = ShopeeStock::create(['shop_id' => Auth::user()->current_shop_id, 'platform_item_id' => $product['item_id'], 'platform_variation_id' => $variation['variation_id'], 'safety_stock' => 0]);
                         StockCost::create(['stock_id' => $item_stock->id, 'cost' => round($variation['original_price'] * $default_cogs_percentage / 100, 2)]);
                     }
                 }
@@ -365,7 +363,7 @@ class ShopeeProductModel extends Model
                     }
                 }
                 if (!$item_stock) {
-                    $item_stock = Stock::create(['shop_id' => Auth::user()->current_shop_id, 'platform_item_id' => $product['item_id'], 'platform_variation_id' => 0, 'safety_stock' => 0]);
+                    $item_stock = ShopeeStock::create(['shop_id' => Auth::user()->current_shop_id, 'platform_item_id' => $product['item_id'], 'platform_variation_id' => 0, 'safety_stock' => 0]);
                     StockCost::create(['stock_id' => $item_stock->id, 'cost' => round($product['original_price'] * $default_cogs_percentage / 100, 2)]);
                 }
             }

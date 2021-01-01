@@ -45,7 +45,8 @@
             </div>
             <div class="card text-white bg-primary py-5 d-md-down-none" style="width:44%">
               <div class="card-body text-center">
-                <div>
+                <img src="/assets/brand/brand.png" style="object-fit: cover;height:80px" >
+                <div class="mt-5">
                   <h2>Sign up</h2>
                   <p></p>
                   @if (Route::has('password.request'))

@@ -1,6 +1,6 @@
 <div class="c-wrapper">
   <header class="c-header c-header-light c-header-fixed c-header-with-subheader">
-    <button class="c-header-toggler c-class-toggler d-lg-none mr-auto" type="button" data-target="#sidebar" data-class="c-sidebar-show"><span class="c-header-toggler-icon"></span></button><a class="c-header-brand d-sm-none" href="#"><img class="c-header-brand" src="{{ env('APP_URL', '') }}/assets/brand/coreui-base.svg" width="97" height="46" alt="CoreUI Logo"></a>
+    <button class="c-header-toggler c-class-toggler d-lg-none mr-auto" type="button" data-target="#sidebar" data-class="c-sidebar-show"><span class="c-header-toggler-icon"></span></button><a class="c-header-brand d-sm-none" href="#"><img src="/assets/brand/brand-inline.png" style="padding:5px"></a>
     <button class="c-header-toggler c-class-toggler ml-3 d-md-down-none" type="button" data-target="#sidebar" data-class="c-sidebar-lg-show" responsive="true"><span class="c-header-toggler-icon"></span></button>
     <ul class="c-header-nav d-md-down-none">
       <div class="dropdown show">
@@ -10,7 +10,7 @@
         <div class="dropdown-menu" aria-labelledby="dropdownMenuLink">
           @foreach(getShopsSession() as $shop_info)
           @if($shop_info['id'] != Auth::user()->current_shop_id)
-          <a class="dropdown-item" href="/change-shop?id={{$shop_info['id']}}">{{$shop_info['platform']." - ".$shop_info['shop_name']." - ".$shop_info['shop_country']}}</a>
+          <a class="dropdown-item" href="/shop/change?id={{$shop_info['id']}}">{{$shop_info['platform']." - ".$shop_info['shop_name']." - ".$shop_info['shop_country']}}</a>
           @endif
           @endforeach
           <!-- <a class="dropdown-item" href="#">Action</a> -->
@@ -18,7 +18,7 @@
           @if(count(getShopsSession()) > 1)
           <div class="dropdown-divider"></div>
           @endif
-          <a class="dropdown-item flex align-items-center" href="/sign-in-platform">
+          <a class="dropdown-item flex align-items-center" href="/shop/sign-in">
             <i class="fa fa-plus-square-o" aria-hidden="true" style="font-size:1.1rem;line-height: inherit;"></i>&nbsp;&nbsp;Add More Shop
           </a>
         </div>

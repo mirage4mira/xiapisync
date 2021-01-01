@@ -11,25 +11,36 @@
       <div class="col-md-10 offset-md-1">
         <div class="position-relative">
           <div class="card">
-            <div class="card-header">Sync items with Lazada
+            <div class="card-header">Sync stock with
+              @if(auth()->user()->currentShop->platform == "SHOPEE") 
+              Lazada
+              @elseif(auth()->user()->currentShop->platform == "LAZADA")
+              Shopee
+              @endif
+
             </div>
             <div class="card-body">
               <div class="row">
                   <div class="col-12 text-center">
                       <div style="display: flex;flex-direction:row;align-items: center;justify-content:space-between;">
                         <div>
-                            <h5>Choose a Lazada Shop:</h5>
+                            <h5>Choose a 
+                              @if(auth()->user()->currentShop->platform == "SHOPEE") 
+                              Lazada
+                              @elseif(auth()->user()->currentShop->platform == "LAZADA")
+                              Shopee
+                              @endif
+                              Shop:</h5>
                         </div>
                         <div>
-                            <form action="/sync-items-with-lazada" method="get">
-                                <select name="shop_id" class="form-control">
-                                    @foreach($lazadaShops as $shop_id => $lazadaShop)
-                                    <option value="{{$shop_id}}">{{$lazadaShop['shop_name']}} - {{$lazadaShop['shop_country']}}</option>
-                                    @endforeach
-                                </select>
-                            </form>
+                            <select class="form-control" onchange="window.location.href='/sync-items?shop_id='+this.value">
+                                @foreach($shops as $shop_id => $_shop)
+                                <option value=""></option>
+                                <option value="{{$shop_id}}" {{$shop && $shop_id == $shop->id ? 'selected' : ''}}>{{$_shop['shop_name']}} - {{$_shop['shop_country']}}</option>
+                                @endforeach
+                            </select>
                             @if($shop)
-                            <form action="/sync-items-with-lazada/map-by-sku" method="post" class="mt-3">
+                            <form action="/sync-items/map-by-sku" method="post" class="mt-3">
                                 @csrf
                                 <input type="hidden" name="mapped_shop_id" value="{{$shop->id}}">
                                 <button class="float-right btn btn-primary" type="submit">Map by sku</button>
@@ -38,11 +49,11 @@
                       </div>
                     </div>
                     @if($shop)
-                    <form action="/sync-items-with-lazada" method="POST">
+                    <form action="/sync-items" method="POST">
                         <input type="hidden" name="mapped_shop_id" value="{{$shop->id}}">
                         @csrf
                     <div class="row mt-3">
-                      <table class="table table-bordered table-sm item-table w-100">
+                      <table class="table table-bordered table-sm item-table">
                         <thead>
                           <tr>
                             <th class="text-left">Item</th>
@@ -51,7 +62,9 @@
                           </tr>
                         </thead>
                         <tbody>
-                          @foreach($shopeeItems as $item)
+                          @foreach($currentShopItems as $item)
+
+                          @if(auth()->user()->currentShop->platform == "SHOPEE")
                           @if($item['variations'])
                             @foreach($item['variations'] as $variation)
                               {{-- {{dd($variation)}} --}}
@@ -115,13 +128,59 @@
                                 {{-- <td class="text-center">{{$item['_append']['stock_syncs'] && $item['_append']['stock_syncs']->where('platform','LAZADA')->count() ? 'Yes' : ''}}</p></td> --}}
                             </tr>
                           @endif
+                          @elseif(auth()->user()->currentShop->platform == "LAZADA")
+                          <tr>
+                            <td class="text-left">{{$item['attributes']['name']}}</td>
+                            <td class="text-left" style="width: 40%">
+                                <input type="hidden" name="item_id[]" value="{{$item['item_id']}}">
+
+                                <select name="shopee_item_code[]" id="" class="w-100">
+                                    <option value=""></option>
+                                    @foreach($products as $product)
+                                    @if(!empty($product['variations']))
+                                      @foreach($product['variations'] as $variation)
+                                      @php
+                                        $stock_sync = $item['_append']['stock_syncs'];
+                                        $selected = '';
+                                        if($stock_sync){
+
+                                          if($stock_sync->where('shopee_stock_id',$variation['_append']['stock_id'])->first()){
+                                                $selected = 'selected';
+                                            }
+                                        }
+
+                                    @endphp
+                                      <option value="{{$product['item_id']."|".$variation['variation_id']}}" {{$selected}}>{{$product['name']}}</option>
+                                   
+                                      @endforeach
+                                    @else
+                                    @php
+                                        $stock_sync = $item['_append']['stock_syncs'];
+
+                                        $selected = '';
+                                        if($stock_sync){
+                                            if($stock_sync->where('shopee_stock_id',$product['_append']['stock_id'])->first()){
+                                                $selected = 'selected';
+                                            }
+                                        }
+
+                                    @endphp
+                                      <option value="{{$product['item_id']."|0"}}" {{$selected}}>{{$product['name']}}</option>
+                                    @endif
+                                      @endforeach
+                                </select>
+                            </td>
+                            {{-- <td class="text-center">{{$item['_append']['stock_syncs'] && $item['_append']['stock_syncs']->where('platform','LAZADA')->count() ? 'Yes' : ''}}</p></td> --}}
+                        </tr>
+                          @endif
+                          
                           @endforeach
                         </tbody>
                       </table>
                     </div>
-                    @endif
                     <input class="btn btn-primary mt-3" type="submit" value="Proceed">
                   </form>
+                    @endif
                 </div>
               </div>
             </div>

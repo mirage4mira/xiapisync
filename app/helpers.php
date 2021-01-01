@@ -2,6 +2,7 @@
 
 use Carbon\Traits\Timestamp;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use PhpParser\Node\Expr\Throw_;
 
 if (! function_exists('get_platforms')) {
     function get_platforms() {
@@ -109,10 +110,12 @@ function lazada_multiple_async_request(string $path, array $datas, $type,$shop =
     foreach($results as $result){
         if(isset($result['value'])){
             $content = json_decode($result['value']->getBody()->getContents(),true);
-
-            if(isset($content['error'])){
+            
+            if($content['code'] > 0){
                 \Log::error($content['error']);
                 \Log::error($content['msg']);
+                
+                throw new Exception("Lazada rest API error!");
             }else{
                 $contents[] = $content;
             }
@@ -250,6 +253,7 @@ function getLazadaShopId($shop = null){
 }
 
 function getLazadaToken($shop = null){
+    // dd($shop);
     return $shop ? $shop->shop_token: Auth::user()->currentShop->shop_token;
 }
 
@@ -257,7 +261,7 @@ function getLazadaAccessToken($shop = null){
     return getLazadaToken($shop)->access_token;
 }
 
-function setShopUserCacheName($string,$shop = null){
+function setShopCacheName($string,$shop = null){
     if($shop){
         $current_shop_id = $shop->id;
     }
@@ -267,5 +271,5 @@ function setShopUserCacheName($string,$shop = null){
         $current_shop_id = Auth::user()->current_shop_id;
     }
 
-    return $string.'_'.Auth::id().'_'.$current_shop_id;
+    return $string.'_'.$current_shop_id;
 }

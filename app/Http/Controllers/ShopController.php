@@ -24,7 +24,7 @@ class ShopController extends Controller
         foreach($platforms as $platform){
             $redirectDatas[] = \Crypt::encrypt(serialize([$platformAuthToken,$platform]));
         }
-        $redirectToBaseUrl = '/add-shop';
+        $redirectToBaseUrl = '/shop/add';
         // dd($redirectDatas);
         $shopeeRedirectUrl = URL::to($redirectToBaseUrl.'?'.http_build_query(['d'=>$redirectDatas[0]]));
         $shopeeToken = hash('sha256',shopee_partner_key().$shopeeRedirectUrl);
@@ -95,7 +95,8 @@ class ShopController extends Controller
         return redirect('/');
     }
 
-    public function changeShop(Request $request){
+    public function change(Request $request){
+        
         $shop = Shop::join('shop_user','shops.id','=','shop_user.shop_id')->where('shops.id',$request->id)->where('shop_user.user_id',Auth()->user()->id)->first();
         if($shop){
             Auth::user()->current_shop_id = $shop->id;

@@ -27,73 +27,87 @@
                     <div class="card">
                         <div class="card-header">Inbound Orders <a href="/inventory/inbound/create" class="float-right"><button class="btn btn-success">Create Inbound</button></a></div>
                         <div class="card-body">
-                            <table class="table inbound-table">
-                                <thead>
-                                    <tr>
-                                        <th>Payment Date</th>
-                                        <th>Reference</th>
-                                        <th>Supplier</th>
-                                        <th>Inbound Items</th>
-                                        <th class="text-center">Days to Supply</th>
-                                        <th class="text-center">Received</th>
-                                        <th class="text-center">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($inboundOrders as $inboundOrder)
-                                        <tr data-inbound-order-id="{{$inboundOrder->id}}">
-                                            <td>{{toClientDateformat($inboundOrder->payment_date)}}</td>
-                                            <td><a href="/inventory/inbound/{{$inboundOrder->id}}">{{$inboundOrder->reference}}</a></td>
-                                            <td>{{$inboundOrder->supplier_name}}</td>
-                                            <td>
-                                                <div style="max-height:90px; overflow-y:auto">
-                                                <table id="item-table">
-                                                    <!-- <thead>
-                                                        <tr>
-                                                            <th>No.</th>
-                                                            <th>Item</th>
-                                                            <th>Quantity</th>
-                                                        </tr>
-                                                    </thead> -->
-                                                    @foreach($inboundOrder->stocks as $key => $stock)
-                                                        <tr>
-                                                            <!-- <td>{{$key + 1}}</td> -->
-                                                            <td>
-                                                                @foreach($products as $product)
-                                                                @if($stock->platform_variation_id)
-                                                                @foreach($product['variations'] as $variation)
-                                                                @if($stock->platform_item_id == $product['item_id'] && $stock->platform_variation_id == $variation['variation_id'])
-                                                                <p>{{$product['name']}}</p>
-                                                                 <p>{{$variation['name']}} {{$product['item_sku'] || $variation['variation_sku'] ? '['.$product['item_sku'].($product['item_sku']?' ':'').$variation['variation_sku'].']': '' }}</p>
-                                                                @break
-                                                                @endif
-                                                                @endforeach
-                                                                @else
-                                                                @if($stock->platform_item_id == $product['item_id'])
-                                                                    <p>{{$product['name']}}</p>
-                                                                    <p>{{$product['item_sku'] ? '['.$product['item_sku']."]" : ''}}</p>
-                                                                    @break
-                                                                @endif
-                                                                @endif
-                                                                @endforeach
-                                                            </td>
-                                                            <td style="min-width:50px;" class="text-right">x {{$stock->pivot->quantity}}</td>
-                                                        </tr>
-                                                    @endforeach
-                                                </table>
-                                                </div>
-                                            </td>
-                                            <td class="text-center">{{$inboundOrder->days_to_supply}}
+                            <div style="overflow-y: auto">
 
-                                                <br><span class="badge badge-primary">{{$inboundOrder->days_to_arrive >= 0 ? "Arrive in" : "Late arrival" }}: {{$inboundOrder->days_to_arrive}} {{$inboundOrder->days_to_arrive > 1 ||  $inboundOrder->days_to_arrive < -1? "days": "day"}}</span>
-                       
-                                            </td>
-                                            <td class="text-center"><div class="received"></div></td>
-                                            <td class="text-center"><div class="received-btn-div" data-received="{{$inboundOrder->stock_received}}"></div></td>
+                                <table class="table inbound-table w-100">
+                                    <thead>
+                                        <tr>
+                                            <th>Payment Date</th>
+                                            <th>Reference</th>
+                                            <th>Supplier</th>
+                                            <th>Inbound Items</th>
+                                            <th class="text-center">Days to Supply</th>
+                                            <th class="text-center">Received</th>
+                                            <th class="text-center">Action</th>
                                         </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($inboundOrders as $inboundOrder)
+                                            <tr data-inbound-order-id="{{$inboundOrder->id}}">
+                                                <td>{{toClientDateformat($inboundOrder->payment_date)}}</td>
+                                                <td><a href="/inventory/inbound/{{$inboundOrder->id}}">{{$inboundOrder->reference}}</a></td>
+                                                <td>{{$inboundOrder->supplier_name}}</td>
+                                                <td>
+                                                    <div style="max-height:90px; overflow-y:auto">
+                                                    <table id="item-table" class="w-100">
+                                                        <!-- <thead>
+                                                            <tr>
+                                                                <th>No.</th>
+                                                                <th>Item</th>
+                                                                <th>Quantity</th>
+                                                            </tr>
+                                                        </thead> -->
+                                                        @php
+                                                         if(auth()->user()->currentShop->platform == "SHOPEE")$stocks = $inboundOrder->shopee_stocks;
+                                                         elseif(auth()->user()->currentShop->platform == "LAZADA")$stocks = $inboundOrder->lazada_stocks;
+                                                        @endphp
+                                                        @foreach($stocks as $key => $stock)
+                                                        <tr>
+                                                                <!-- <td>{{$key + 1}}</td> -->
+                                                                <td>
+                                                                    @foreach($products as $product)
+                                                                        @if(auth()->user()->currentShop->platform == "SHOPEE")
+                                                                            @if($stock->platform_variation_id)
+                                                                                @foreach($product['variations'] as $variation)
+                                                                                    @if($stock->platform_item_id == $product['item_id'] && $stock->platform_variation_id == $variation['variation_id'])
+                                                                                        <p>{{$product['name']}}</p>
+                                                                                        <p>{{$variation['name']}} {{$product['item_sku'] || $variation['variation_sku'] ? '['.$product['item_sku'].($product['item_sku']?' ':'').$variation['variation_sku'].']': '' }}</p>
+                                                                                        @break
+                                                                                    @endif
+                                                                                @endforeach
+                                                                            @else
+                                                                                @if($stock->platform_item_id == $product['item_id'])
+                                                                                    <p>{{$product['name']}}</p>
+                                                                                    <p>{{$product['item_sku'] ? '['.$product['item_sku']."]" : ''}}</p>
+                                                                                    @break
+                                                                                @endif
+                                                                            @endif
+                                                                        @elseif(auth()->user()->currentShop->platform == "LAZADA")
+                                                                            @if($stock->platform_item_id == $product['item_id'])
+                                                                            <p>{{$product['attributes']['name']}}</p>
+                                                                            <p>{{$product['skus'][0]['SellerSku']}}</p>
+                                                                            @endif
+                                                                        @endif
+                                                                    @endforeach
+                                                                </td>
+                                                                <td style="min-width:50px;" class="text-right">x {{$stock->pivot->quantity}}</td>
+                                                            </tr>
+                                                        @endforeach
+                                                    </table>
+                                                    </div>
+                                                </td>
+                                                <td class="text-center">{{$inboundOrder->days_to_supply}}
+    
+                                                    <br><span class="badge badge-primary">{{$inboundOrder->days_to_arrive >= 0 ? "Arrive in" : "Late arrival" }}: {{$inboundOrder->days_to_arrive}} {{$inboundOrder->days_to_arrive > 1 ||  $inboundOrder->days_to_arrive < -1? "days": "day"}}</span>
+                           
+                                                </td>
+                                                <td class="text-center"><div class="received"></div></td>
+                                                <td class="text-center"><div class="received-btn-div" data-received="{{$inboundOrder->stock_received}}"></div></td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -118,7 +132,7 @@
                 // changeReceivedBtnToTick(ele);
                 received_text_ele.html("Yes");
             }else{
-                ele.append("<button type='button' class='btn btn-success btn-sm' onclick='inboundOrderReceived(this,1)'>Stock Received</button>");
+                ele.append("<a href='#' onclick='inboundOrderReceived(this,1)'>Stock Received</a>");
                 received_text_ele.html("No");
             }
         })
@@ -128,6 +142,7 @@
     });
     
     function inboundOrderReceived(obj,received){
+        e.preventDefault();
         obj = $(obj);
         var tr = obj.closest("tr");
         var inboundOrderId = tr.data('inbound-order-id');

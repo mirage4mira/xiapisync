@@ -32,9 +32,9 @@ class InventoryTemplateExport implements FromArray, ShouldAutoSize, WithEvents
         // ...
 
         // $sheet->loadView('template');
-$sheet->getProtection()->setPassword('password');
-$sheet->getProtection()->setSheet(true);
-$sheet->getStyle('D2:G'.$sheet->getHighestRow())->getProtection()->setLocked(\PhpOffice\PhpSpreadsheet\Style\Protection::PROTECTION_UNPROTECTED);
+        $sheet->getProtection()->setPassword('password');
+        $sheet->getProtection()->setSheet(true);
+        $sheet->getStyle('D2:G'.$sheet->getHighestRow())->getProtection()->setLocked(\PhpOffice\PhpSpreadsheet\Style\Protection::PROTECTION_UNPROTECTED);
 
     }
 }

@@ -16,7 +16,7 @@
                                 <form action="/inventory/inbound/{{$inbound_order->id}}" method="post" class="d-inline">
                                 @method('delete')
                                 @csrf
-                                    <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this Inbound Order?')">Delete</button>
+                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this Inbound Order?')">Delete</button>
                                 </form>
                             </div>
                             @else
@@ -60,7 +60,7 @@
                                     </div>
                                 </div>
                                 <div class="row mt-3">
-                                    <div class="col-7">
+                                    <div class="col-6">
                                         Item
                                     </div>
                                     <div class="col-2">
@@ -68,6 +68,9 @@
                                     </div>
                                     <div class="col-2">
                                         Cost
+                                    </div>
+                                    <div class="col-2 text-center">
+                                        Action
                                     </div>
                                 </div>
                                 <hr class="mt-1">
@@ -89,7 +92,7 @@
 <div class="d-none item-row">
 
     <div class="form-row">
-        <div class="form-group col-md-7">
+        <div class="form-group col-md-6">
             <!-- <label>Item</label> -->
             <input type="hidden" class="form-control" name="items_id[]">
             <input type="hidden" class="form-control" name="variations_id[]">
@@ -109,12 +112,16 @@
             <select class="form-control item-select" onchange="itemSelectedAction(this)" required>
                 <option value=""></option>
                 @foreach($products as $product)
-                @if(empty($product['variations']))
-                <option data-item-id="{{$product['item_id']}}" data-variation-id="0" data-cost="{{$product['_append']['cost']}}" value="{{$product['item_id'].'|0'}}"> {{$product['name']}} {{$product['item_sku'] ? '['.$product['item_sku'].']' : ''}}</option>
-                @else
-                @foreach($product['variations'] as $variation)
-                <option data-item-id="{{$product['item_id']}}" data-variation-id="{{$variation['variation_id']}}" data-cost="{{$variation['_append']['cost']}}" value="{{$product['item_id'].'|'.$variation['variation_id']}}">{{$product['name']}} <br> {{ $variation['name']}} {{$product['item_sku'] || $variation['variation_sku'] ? "[".$product['item_sku'].($product['item_sku']?" ":'').$variation['variation_sku']."]" : ''}}</option>
-                @endforeach
+                @if(auth()->user()->currentShop->platform == "SHOPEE")
+                    @if(empty($product['variations']))
+                    <option data-item-id="{{$product['item_id']}}" data-variation-id="0" data-cost="{{$product['_append']['cost']}}" value="{{$product['item_id'].'|0'}}"> {{$product['name']}} {{$product['item_sku'] ? '['.$product['item_sku'].']' : ''}}</option>
+                    @else
+                    @foreach($product['variations'] as $variation)
+                    <option data-item-id="{{$product['item_id']}}" data-variation-id="{{$variation['variation_id']}}" data-cost="{{$variation['_append']['cost']}}" value="{{$product['item_id'].'|'.$variation['variation_id']}}">{{$product['name']}} <br> {{ $variation['name']}} {{$product['item_sku'] || $variation['variation_sku'] ? "[".$product['item_sku'].($product['item_sku']?" ":'').$variation['variation_sku']."]" : ''}}</option>
+                    @endforeach
+                    @endif
+                @elseif(auth()->user()->currentShop->platform == "LAZADA")
+                    <option data-item-id="{{$product['item_id']}}" data-cost="{{$product['_append']['cost']}}" value="{{$product['item_id']}}">{{$product['attributes']['name']}} </option>
                 @endif
                 @endforeach
             </select>
@@ -128,9 +135,8 @@
             <!-- <label>Cost</label> -->
             <input type="number" class="form-control" min="0" step="0.01" name="costs[]" required>
         </div>
-        <div class="form-group col-md-1 d-flex justify-content-center">
-            <!-- <label>Cost</label> -->
-            <button type="button" class="btn btn-sm btn-danger" onclick="$(this).closest('.item-row').remove();"><i class="cil-trash"></i></button>
+        <div class="form-group col-md-2 d-flex justify-content-center align-items-center">
+            <a href="#" class="delete-item-row">Delete</a>
         </div>
     </div>
 </div>
@@ -146,22 +152,42 @@
 
 
         displayStockReceived({{$inbound_order->stock_received}});
-        @foreach($inbound_order->stocks as $stock)
+
+        @if(auth()->user()->currentShop->platform == "SHOPEE")
+        @foreach($inbound_order->shopee_stocks as $stock)
         addItemRow({item_id:'{{$stock->platform_item_id}}',variation_id:'{{$stock->platform_variation_id}}',quantity:'{{$stock->pivot->quantity}}',cost:'{{$stock->pivot->cost}}'});
         @endforeach
+        @elseif(auth()->user()->currentShop->platform == "LAZADA")
+        @foreach($inbound_order->lazada_stocks as $stock)
+        addItemRow({item_id:'{{$stock->platform_item_id}}',quantity:'{{$stock->pivot->quantity}}',cost:'{{$stock->pivot->cost}}'});
+        @endforeach
+        @endif
         @else
         addItemRow();
         @endif
+
+        $('.delete-item-row').on('click',function(e){
+            e.preventDefault();
+            $(this).closest('.item-row').remove();
+        })
+        @if($inbound_order)
+        $('#revert-stock-received').on('click',function(e){
+            e.preventDefault();
+            inboundOrderReceived(this,{{$inbound_order->id}},0);
+        });
+        @endif
+
     })
+
     @if($inbound_order)
     function displayStockReceived(received){
         var obj = $('div.received');
 
         obj.empty();
         if(received){
-            obj.append(`<button type="button" class="btn btn-warning" onclick='inboundOrderReceived(this,{{$inbound_order->id}},0)'>Revert Stock Received</button>`);
+            obj.append(`<a href="#" id="revert-stock-received" style="margin-right:10px;">Revert Stock Received</a>`);
         }else{
-            obj.append(`<button type="button" class="btn btn-success" onclick='inboundOrderReceived(this,{{$inbound_order->id}},1)'>Stock Received</button>`);
+            obj.append(`<button type="button" class="btn btn-sm btn-success" onclick='inboundOrderReceived(this,{{$inbound_order->id}},1)'>Stock Received</button>`);
         }
     }
     @endif
@@ -170,12 +196,18 @@
        var itemRow = $('.item-row.d-none').clone().removeClass('d-none');
        $('#items-div').append(itemRow);
        if(data){
-           console.log(data);
-           itemRow.find('.item-select').val(data.item_id+'|'+data.variation_id).change();
-           itemRow.find('[name="items_id[]"]').val(data.item_id);
-           itemRow.find('[name="variations_id[]"]').val(data.variation_id);
-           itemRow.find('[name="quantities[]"]').val(data.quantity);
-           itemRow.find('[name="costs[]"]').val(data.cost);
+            @if(auth()->user()->currentShop->platform == "SHOPEE")
+                itemRow.find('.item-select').val(data.item_id+'|'+data.variation_id).change();
+                itemRow.find('[name="items_id[]"]').val(data.item_id);
+                itemRow.find('[name="variations_id[]"]').val(data.variation_id);
+                itemRow.find('[name="quantities[]"]').val(data.quantity);
+                itemRow.find('[name="costs[]"]').val(data.cost);
+            @elseif(auth()->user()->currentShop->platform == "LAZADA")
+            itemRow.find('.item-select').val(data.item_id).change();
+                itemRow.find('[name="items_id[]"]').val(data.item_id);
+                itemRow.find('[name="quantities[]"]').val(data.quantity);
+                itemRow.find('[name="costs[]"]').val(data.cost);
+            @endif
            
        }
        var select = itemRow.find('.item-select').select2();
@@ -184,6 +216,7 @@
        }
         
     }
+
 
     function itemSelectedAction(obj) {
         obj = $(obj);

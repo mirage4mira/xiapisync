@@ -4,6 +4,8 @@ namespace App;
 use Paulwscom\Lazada\LazopClient;
 use Paulwscom\Lazada\LazopRequest;
 
+use App\Scopes\AuthorizedShopScope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class Shop extends Model
@@ -26,6 +28,18 @@ class Shop extends Model
 
     public function shop_token(){
         return $this->belongsTo('App\ShopToken');
+    }
+
+    protected static function booted()
+    {
+        if(auth()->user()->shops()->count()){
+            $shop_ids = auth()->user()->shops()->pluck('shops.id');
+            static::addGlobalScope('authorized_shops',function(Builder $builder) use ($shop_ids){
+                if(auth()->id()){
+                    $builder->whereIn('shops.id',$shop_ids);
+                }
+            });
+        }
     }
 
     public function getShopInfo(){

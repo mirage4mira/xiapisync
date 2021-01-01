@@ -18,9 +18,7 @@ function HandleArray(&$value)
 
   if (isset($value['children']) && is_array($value['children'])) {
     //Do something with all array
-    if($value['name'] == "Packaging & Cartons"){
-      Log::alert($value);
-    }
+
     echo "<optgroup label='" . $value['name'] . "'>";
     array_walk($value['children'], 'HandleArray');
     echo "</optgroup>";
@@ -31,6 +29,7 @@ function HandleArray(&$value)
 }
 ?>
 <select class="form-control category-select d-none" style="width: 100%;" id="cat-select-template" onchange="setCategoryInput(this)">
+  <option value=""></option>
   <?php
   array_walk($categories, 'HandleArray');
   ?>
@@ -45,11 +44,10 @@ function HandleArray(&$value)
           <div class="card">
             <div class="card-header">Sync items with Lazada</div>
             <div class="card-body">
-            <form action="/export-items-to-lazada" id="items-form" method="post">
+            <form action="/sync-items/add" id="items-form" method="post">
                 @csrf
                 <input type="hidden" name="shop_id" value="{{$shop_id}}">
-                @foreach($shopeeItemsChunk as $key => $shopeeItems)
-                <div id="items-tab-{{$key}}" class="d-none">
+
                   @foreach($shopeeItems as $item)
                   @if(!empty($item['variations']))
                   @foreach($item['variations'] as $variation)
@@ -59,7 +57,7 @@ function HandleArray(&$value)
                       if ($sku) $sku = '[' . $sku . ']' ?>
                       <p>{{$item['name']}}<br><small>{{$variation['name']}} {{$sku}}</small></p>
                     </div>
-                    @include('sync-items.includes.item-attribute-input')
+                    @include('add-items.includes.item-attribute-input')
                   </div>
                   @endforeach
                   @else
@@ -69,17 +67,15 @@ function HandleArray(&$value)
                       if ($sku) $sku = '[' . $sku . ']' ?>
                       <p>{{$item['name']}}<br><small>{{$sku}}</small></p>
                     </div>
-                    @include('sync-items.includes.item-attribute-input')
+                    @include('add-items.includes.item-attribute-input')
                   </div>
                   @endif
                   <hr>
                   @endforeach
-                </div>
-                @endforeach
 
                   <input type="submit" class="btn btn-primary" value="Save">
               </form>
-              <nav aria-label="Page navigation example" style="margin-top:3rem;">
+              {{-- <nav aria-label="Page navigation example" style="margin-top:3rem;">
                 <ul class="pagination">
                   <li class="page-item"><a class="page-link" onclick="switchToPrevPane()" id="tab-switch-prev">Previous</a></li>
                   @foreach($shopeeItemsChunk as $key => $d)
@@ -88,7 +84,7 @@ function HandleArray(&$value)
                   @endforeach
                   <li class="page-item"><a class="page-link" onclick="switchToNextPane()" id="tab-switch-next">Next</a></li>
                 </ul>
-              </nav>
+              </nav> --}}
             </div>
           </div>
         </div>
@@ -107,15 +103,15 @@ function HandleArray(&$value)
   <script src="{{ asset('js/main.js') }}"></script>
 
   <script>
-    var activeTab = null;
-    var maxTab = '{{count($shopeeItemsChunk) - 1}}';
+    // var activeTab = null;
+    {{-- // var maxTab = '{{count($shopeeItemsChunk) - 1}}';--}}
     $(function() {
       $('.item-select-div').each(function(idx, obj) {
         var clone = $('#cat-select-template').clone().attr('id', null).removeClass('d-none');
         $(obj).prepend(clone);
         clone.select2();
       });
-      switchPane(0);
+      // switchPane(0);
       // $('.category-select').select2();
       // getProductsData().then(function(data){
       //   $('#items-div').pagination({
@@ -128,35 +124,35 @@ function HandleArray(&$value)
 
     });
 
-    function switchPane(tabId) {
-      $('div[id^="items-tab-"').each(function(idx, obj) {
-        $(obj).addClass('d-none');
-      });
+    // function switchPane(tabId) {
+    //   $('div[id^="items-tab-"').each(function(idx, obj) {
+    //     $(obj).addClass('d-none');
+    //   });
 
-      $('#items-tab-' + tabId).removeClass('d-none');
+    //   $('#items-tab-' + tabId).removeClass('d-none');
 
-      $('a[id^="tab-switch-"').each(function(idx, obj) {
-        if ($(obj).attr('id') == 'tab-switch-' + tabId)
-          $(obj).parent('.page-item').addClass('active');
-        else {
-          $(obj).parent('.page-item').removeClass('active');
-        }
-      });
+    //   $('a[id^="tab-switch-"').each(function(idx, obj) {
+    //     if ($(obj).attr('id') == 'tab-switch-' + tabId)
+    //       $(obj).parent('.page-item').addClass('active');
+    //     else {
+    //       $(obj).parent('.page-item').removeClass('active');
+    //     }
+    //   });
 
-      activeTab = tabId;
+    //   activeTab = tabId;
 
-      if (activeTab == 0) $('#tab-switch-prev').addClass('notActive');
-      else if (activeTab == maxTab) $('#tab-switch-next').AddClass('notActive');
-      else $('#tab-switch-prev', '#tab-switch-next').removeClass('notActive');
-    }
+    //   if (activeTab == 0) $('#tab-switch-prev').addClass('notActive');
+    //   else if (activeTab == maxTab) $('#tab-switch-next').AddClass('notActive');
+    //   else $('#tab-switch-prev', '#tab-switch-next').removeClass('notActive');
+    // }
 
-    function switchToPrevPane() {
-      switchPane(activeTab - 1);
-    }
+    // function switchToPrevPane() {
+    //   switchPane(activeTab - 1);
+    // }
 
-    function switchToNextPane() {
-      switchPane(activeTab + 1);
-    }
+    // function switchToNextPane() {
+    //   switchPane(activeTab + 1);
+    // }
 
     var i = 0;
     function setCategoryInput(obj) {
@@ -167,7 +163,7 @@ function HandleArray(&$value)
       return $.ajax({
         async: true,
         type: 'GET',
-        url: '/get-category-attribute',
+        url: '/sync-items/add/get-category-attribute-input',
         data: {
           _token: CSRF_TOKEN,
           category_id: $(obj).val(),

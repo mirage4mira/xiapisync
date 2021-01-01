@@ -19,7 +19,7 @@
                             </svg>
                           </span>
                         </div>
-                        <input class="form-control" type="text" placeholder="{{ __('Name') }}" name="name" value="{{ old('name') }}" required autofocus>
+                        <input class="form-control" type="text" placeholder="{{ __('Name') }}" name="name" value="{{ old('name') }}" required autofocus minlength="3">
                     </div>
                     <div class="input-group mb-3">
                         <div class="input-group-prepend">
@@ -29,7 +29,7 @@
                             </svg>
                           </span>
                         </div>
-                        <input class="form-control" type="text" placeholder="{{ __('Username') }}" name="username" value="{{ old('name') }}" required autofocus>
+                        <input class="form-control" type="text" placeholder="{{ __('Username') }}" name="username" value="{{ old('name') }}" required autofocus minlength="3">
                     </div>
                     <div class="input-group mb-3">
                         <div class="input-group-prepend">
@@ -49,7 +49,7 @@
                             </svg>
                           </span>
                         </div>
-                        <input class="form-control" type="password" placeholder="{{ __('Password') }}" name="password" required>
+                        <input class="form-control" type="password" placeholder="{{ __('Password') }}" name="password" id="password" required minlength="8">
                     </div>
                     <div class="input-group mb-4">
                         <div class="input-group-prepend">
@@ -59,12 +59,16 @@
                             </svg>
                           </span>
                         </div>
-                        <input class="form-control" type="password" placeholder="{{ __('Confirm Password') }}" name="password_confirmation" required>
-                    </div>
+                        <input class="form-control" type="password" placeholder="{{ __('Confirm Password') }}" name="password_confirmation" id="confirm_password" required minlength="8">
+                        <span id='message' style="position: absolute; right:5px;top:5px;"></span>
+                      </div>
                     <button class="btn btn-block btn-success" type="submit">{{ __('Register') }}</button>
                 </form>
             </div>
-            <div class="card-footer p-4">
+            <div class="card-footer p-4 text-center">
+              <p>Already have an account? <a href="/login">Log In</a></p>  
+            </div>
+            {{-- <div class="card-footer p-4">
               <div class="row">
                 <div class="col-6">
                   <button class="btn btn-block btn-facebook" type="button">
@@ -77,7 +81,7 @@
                   </button>
                 </div>
               </div>
-            </div>
+            </div> --}}
           </div>
         </div>
       </div>
